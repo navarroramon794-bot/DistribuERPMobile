@@ -1,0 +1,510 @@
+package com.distribuerp.mobile.navigation
+
+import android.util.Log
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.distribuerp.mobile.screens.ClienteDetalleScreen
+import com.distribuerp.mobile.screens.ClienteFormScreen
+import com.distribuerp.mobile.screens.ClientesScreen
+import com.distribuerp.mobile.screens.CobranzaScreen
+import com.distribuerp.mobile.screens.DashboardScreen
+import com.distribuerp.mobile.screens.InventarioScreen
+import com.distribuerp.mobile.screens.LoginScreen
+import com.distribuerp.mobile.screens.NuevaVentaScreen
+import com.distribuerp.mobile.screens.ProductoDetalleScreen
+import com.distribuerp.mobile.screens.ProductoFormScreen
+import com.distribuerp.mobile.screens.ProductosScreen
+import com.distribuerp.mobile.screens.VendedorDetalleScreen
+import com.distribuerp.mobile.screens.VendedorFormScreen
+import com.distribuerp.mobile.screens.VendedoresScreen
+import com.distribuerp.mobile.viewmodel.AuthViewModel
+import com.distribuerp.mobile.viewmodel.ClienteViewModel
+import com.distribuerp.mobile.viewmodel.CobranzaViewModel
+import com.distribuerp.mobile.viewmodel.InventarioViewModel
+import com.distribuerp.mobile.viewmodel.ProductoViewModel
+import com.distribuerp.mobile.viewmodel.VendedorViewModel
+import com.distribuerp.mobile.viewmodel.VentaViewModel
+import kotlinx.coroutines.launch
+
+object Rutas {
+    const val LOGIN = "login"
+    const val DASHBOARD = "dashboard"
+    const val CLIENTES = "clientes"
+    const val CLIENTE_DETALLE = "clientes/{clienteId}"
+    const val CLIENTE_FORM = "clientes/formulario?clienteId={clienteId}"
+    const val PRODUCTOS = "productos"
+    const val PRODUCTO_DETALLE = "productos/{productoId}"
+    const val PRODUCTO_FORM = "productos/formulario?productoId={productoId}"
+    const val VENDEDORES = "vendedores"
+    const val VENDEDOR_DETALLE = "vendedores/{vendedorId}"
+    const val VENDEDOR_FORM = "vendedores/formulario?vendedorId={vendedorId}"
+    const val INVENTARIO = "inventario"
+    const val NUEVA_VENTA = "nueva_venta"
+    const val COBRANZA = "cobranza"
+
+    fun clienteDetalle(clienteId: Int): String =
+        "clientes/$clienteId"
+
+    fun clienteForm(clienteId: Int? = null): String =
+        if (clienteId != null) {
+            "clientes/formulario?clienteId=$clienteId"
+        } else {
+            "clientes/formulario"
+        }
+
+    fun productoDetalle(productoId: Int): String =
+        "productos/$productoId"
+
+    fun productoForm(productoId: Int? = null): String =
+        if (productoId != null) {
+            "productos/formulario?productoId=$productoId"
+        } else {
+            "productos/formulario"
+        }
+
+    fun vendedorDetalle(vendedorId: Int): String =
+        "vendedores/$vendedorId"
+
+    fun vendedorForm(vendedorId: Int? = null): String =
+        if (vendedorId != null) {
+            "vendedores/formulario?vendedorId=$vendedorId"
+        } else {
+            "vendedores/formulario"
+        }
+}
+
+@Composable
+fun NavGraph() {
+    val navController = rememberNavController()
+    val viewModel: AuthViewModel = viewModel(factory = AuthViewModel.Factory)
+    val clienteViewModel: ClienteViewModel =
+        viewModel(factory = ClienteViewModel.Factory)
+    val productoViewModel: ProductoViewModel =
+        viewModel(factory = ProductoViewModel.Factory)
+    val vendedorViewModel: VendedorViewModel =
+        viewModel(factory = VendedorViewModel.Factory)
+    val inventarioViewModel: InventarioViewModel =
+        viewModel(factory = InventarioViewModel.Factory)
+    val ventaViewModel: VentaViewModel =
+        viewModel(factory = VentaViewModel.Factory)
+    val cobranzaViewModel: CobranzaViewModel =
+        viewModel(factory = CobranzaViewModel.Factory)
+    val sesion by viewModel.sesion.collectAsState()
+
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val rutaActual = backStackEntry?.destination?.route
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(sesion, rutaActual) {
+        Log.d(
+            "NAV",
+            "sesion=${sesion != null} ruta=$rutaActual"
+        )
+
+        when {
+            sesion != null && rutaActual == Rutas.LOGIN -> {
+                navController.navigate(Rutas.DASHBOARD) {
+                    popUpTo(Rutas.LOGIN) {
+                        inclusive = true
+                    }
+                }
+            }
+
+            sesion == null && rutaActual != Rutas.LOGIN -> {
+                navController.navigate(Rutas.LOGIN) {
+                    popUpTo(0) {
+                        inclusive = true
+                    }
+                }
+            }
+        }
+    }
+
+    val esPantallaConDrawer =
+        sesion != null &&
+                rutaActual != null &&
+                rutaActual != Rutas.LOGIN
+
+    val contenidoNav: @Composable () -> Unit = {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+
+            NavHost(
+                navController = navController,
+                startDestination =
+                    if (sesion != null) Rutas.DASHBOARD else Rutas.LOGIN
+            ) {
+
+                composable(Rutas.LOGIN) {
+                    LoginScreen(viewModel = viewModel)
+                }
+
+                composable(Rutas.DASHBOARD) {
+                    DashboardScreen(
+                        authViewModel = viewModel,
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onNavegarClientes = {
+                            navController.navigate(Rutas.CLIENTES)
+                        }
+                    )
+                }
+
+                composable(Rutas.CLIENTES) {
+                    ClientesScreen(
+                        viewModel = clienteViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onNuevoCliente = {
+                            navController.navigate(Rutas.clienteForm())
+                        },
+                        onVerDetalle = { clienteId ->
+                            navController.navigate(
+                                Rutas.clienteDetalle(clienteId)
+                            )
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.CLIENTE_DETALLE,
+                    arguments = listOf(
+                        navArgument("clienteId") {
+                            type = NavType.IntType
+                        }
+                    )
+                ) { entrada ->
+
+                    val clienteId =
+                        entrada.arguments?.getInt("clienteId") ?: 0
+
+                    ClienteDetalleScreen(
+                        clienteId = clienteId,
+                        viewModel = clienteViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onEditar = { id ->
+                            navController.navigate(
+                                Rutas.clienteForm(id)
+                            )
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.CLIENTE_FORM,
+                    arguments = listOf(
+                        navArgument("clienteId") {
+                            type = NavType.IntType
+                            defaultValue = -1
+                        }
+                    )
+                ) { entrada ->
+
+                    val clienteId =
+                        entrada.arguments?.getInt("clienteId") ?: -1
+
+                    ClienteFormScreen(
+                        clienteId = if (clienteId > 0) {
+                            clienteId
+                        } else {
+                            null
+                        },
+                        viewModel = clienteViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onGuardado = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Rutas.PRODUCTOS) {
+                    ProductosScreen(
+                        viewModel = productoViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onNuevoProducto = {
+                            navController.navigate(Rutas.productoForm())
+                        },
+                        onVerDetalle = { productoId ->
+                            navController.navigate(
+                                Rutas.productoDetalle(productoId)
+                            )
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.PRODUCTO_DETALLE,
+                    arguments = listOf(
+                        navArgument("productoId") {
+                            type = NavType.IntType
+                        }
+                    )
+                ) { entrada ->
+
+                    val productoId =
+                        entrada.arguments?.getInt("productoId") ?: 0
+
+                    ProductoDetalleScreen(
+                        productoId = productoId,
+                        viewModel = productoViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onEditar = { id ->
+                            navController.navigate(
+                                Rutas.productoForm(id)
+                            )
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.PRODUCTO_FORM,
+                    arguments = listOf(
+                        navArgument("productoId") {
+                            type = NavType.IntType
+                            defaultValue = -1
+                        }
+                    )
+                ) { entrada ->
+
+                    val productoId =
+                        entrada.arguments?.getInt("productoId") ?: -1
+
+                    ProductoFormScreen(
+                        productoId = if (productoId > 0) {
+                            productoId
+                        } else {
+                            null
+                        },
+                        viewModel = productoViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onGuardado = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Rutas.VENDEDORES) {
+                    VendedoresScreen(
+                        viewModel = vendedorViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onNuevoVendedor = {
+                            navController.navigate(Rutas.vendedorForm())
+                        },
+                        onVerDetalle = { vendedorId ->
+                            navController.navigate(
+                                Rutas.vendedorDetalle(vendedorId)
+                            )
+                        }
+                    )
+                }
+
+                composable(Rutas.INVENTARIO) {
+                    InventarioScreen(
+                        viewModel = inventarioViewModel,
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        }
+                    )
+                }
+
+                composable(Rutas.NUEVA_VENTA) {
+                    NuevaVentaScreen(
+                        viewModel = ventaViewModel,
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        }
+                    )
+                }
+
+                composable(Rutas.COBRANZA) {
+                    CobranzaScreen(
+                        viewModel = cobranzaViewModel,
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.VENDEDOR_DETALLE,
+                    arguments = listOf(
+                        navArgument("vendedorId") {
+                            type = NavType.IntType
+                        }
+                    )
+                ) { entrada ->
+
+                    val vendedorId =
+                        entrada.arguments?.getInt("vendedorId") ?: 0
+
+                    VendedorDetalleScreen(
+                        vendedorId = vendedorId,
+                        viewModel = vendedorViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onEditar = { id ->
+                            navController.navigate(
+                                Rutas.vendedorForm(id)
+                            )
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.VENDEDOR_FORM,
+                    arguments = listOf(
+                        navArgument("vendedorId") {
+                            type = NavType.IntType
+                            defaultValue = -1
+                        }
+                    )
+                ) { entrada ->
+
+                    val vendedorId =
+                        entrada.arguments?.getInt("vendedorId") ?: -1
+
+                    VendedorFormScreen(
+                        vendedorId = if (vendedorId > 0) {
+                            vendedorId
+                        } else {
+                            null
+                        },
+                        viewModel = vendedorViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onGuardado = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+            }
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+    }
+
+    if (esPantallaConDrawer) {
+
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+
+                DrawerContenido(
+                    nombreUsuario = sesion?.nombre ?: "",
+                    correoUsuario = sesion?.correo ?: "",
+                    rutaActual = rutaActual,
+                    onSeleccionar = { item ->
+
+                        scope.launch {
+                            drawerState.close()
+                        }
+
+                        val ruta = item.ruta
+
+                        when {
+
+                            ruta == null -> {
+
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "El módulo \"${item.etiqueta}\" " +
+                                                "no está disponible aún"
+                                    )
+                                }
+                            }
+
+                            ruta != rutaActual -> {
+
+                                navController.navigate(ruta) {
+                                    popUpTo(Rutas.DASHBOARD)
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    },
+                    onCerrarSesion = {
+
+                        scope.launch {
+                            drawerState.close()
+                        }
+
+                        viewModel.cerrarSesion()
+                    }
+                )
+            }
+        ) {
+
+            contenidoNav()
+        }
+
+    } else {
+
+        contenidoNav()
+    }
+}
