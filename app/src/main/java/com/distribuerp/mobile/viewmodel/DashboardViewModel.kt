@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.distribuerp.mobile.models.DashboardDatos
 import com.distribuerp.mobile.repository.DashboardRepository
+import com.distribuerp.mobile.repository.mensajeAmigable
 
 class DashboardViewModel(
     private val repository: DashboardRepository
@@ -38,7 +39,7 @@ class DashboardViewModel(
             },
             onError = { t ->
                 loading = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }

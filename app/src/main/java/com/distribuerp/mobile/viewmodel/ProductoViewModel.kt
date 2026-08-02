@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.distribuerp.mobile.models.Producto
 import com.distribuerp.mobile.models.ProductoRequest
 import com.distribuerp.mobile.repository.ProductoRepository
+import com.distribuerp.mobile.repository.mensajeAmigable
 
 class ProductoViewModel(
     private val repository: ProductoRepository
@@ -50,7 +51,7 @@ class ProductoViewModel(
             },
             onError = { t ->
                 loading = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }
@@ -67,7 +68,7 @@ class ProductoViewModel(
             },
             onError = { t ->
                 cargandoDetalle = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }
@@ -88,7 +89,7 @@ class ProductoViewModel(
 
         val alError: (Throwable) -> Unit = { t ->
             guardando = false
-            mensaje = t.message ?: "Error de conexión"
+            mensaje = mensajeAmigable(t)
         }
 
         if (id == null) {
@@ -123,7 +124,7 @@ class ProductoViewModel(
             },
             onError = { t ->
                 eliminando = false
-                mensaje = t.message ?: "Error de conexión"
+                mensaje = mensajeAmigable(t)
             }
         )
     }

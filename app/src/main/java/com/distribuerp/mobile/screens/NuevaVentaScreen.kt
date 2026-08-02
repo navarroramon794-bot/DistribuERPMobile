@@ -43,14 +43,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.distribuerp.mobile.models.Producto
 import com.distribuerp.mobile.models.Vendedor
+import com.distribuerp.mobile.printing.PrinterRepository
 import com.distribuerp.mobile.ui.components.AvisoMensaje
 import com.distribuerp.mobile.ui.components.BarraBusqueda
 import com.distribuerp.mobile.ui.components.EmptyContent
@@ -60,6 +63,7 @@ import com.distribuerp.mobile.ui.components.SelectorDesplegable
 import com.distribuerp.mobile.ui.components.formatearDinero
 import com.distribuerp.mobile.viewmodel.ItemTicket
 import com.distribuerp.mobile.viewmodel.VentaViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,8 +84,25 @@ fun NuevaVentaScreen(
     val error = viewModel.error
     val mensaje = viewModel.mensaje
 
+    val contexto = LocalContext.current
+    val impresoraRepositorio = remember {
+        PrinterRepository(contexto.applicationContext)
+    }
+    val scopeImpresion = rememberCoroutineScope()
+    var imprimiendo by remember {
+        mutableStateOf(false)
+    }
+    var errorImpresion by remember {
+        mutableStateOf<String?>(null)
+    }
+
     var busqueda by remember {
         mutableStateOf("")
+    }
+
+    LaunchedEffect(ventaExitosa) {
+        imprimiendo = false
+        errorImpresion = null
     }
 
     val filtrados = remember(productos, busqueda) {
@@ -286,7 +307,7 @@ fun NuevaVentaScreen(
 
                         items(
                             items = filtrados,
-                            key = { it.id }
+                            key = { "buscar_${it.id}" }
                         ) { producto ->
 
                             TarjetaProductoBusqueda(
@@ -326,7 +347,9 @@ fun NuevaVentaScreen(
 
                         itemsIndexed(
                             items = items,
-                            key = { _, item -> item.producto.id }
+                            key = { _, item ->
+                                "item_${item.producto.id}"
+                            }
                         ) { indice, item ->
 
                             TarjetaItemVenta(
@@ -474,18 +497,75 @@ fun NuevaVentaScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
+
+                    errorImpresion?.let { mensajeError ->
+
+                        Text(
+                            text = mensajeError,
+                            style =
+                                MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             },
             confirmButton = {
 
-                TextButton(
-                    onClick = {
-
-                        viewModel.limpiarVentaExitosa()
-                    }
+                Row(
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp)
                 ) {
 
-                    Text("Aceptar")
+                    TextButton(
+                        onClick = {
+
+                            imprimiendo = true
+                            errorImpresion = null
+
+                            scopeImpresion.launch {
+
+                                val resultado =
+                                    impresoraRepositorio
+                                        .imprimirTicketVenta(venta)
+                                imprimiendo = false
+
+                                if (resultado.ok) {
+
+                                    viewModel.limpiarVentaExitosa()
+
+                                } else {
+
+                                    errorImpresion =
+                                        resultado.mensaje
+                                }
+                            }
+                        },
+                        enabled = !imprimiendo
+                    ) {
+
+                        if (imprimiendo) {
+
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+
+                        } else {
+
+                            Text("Imprimir Ticket")
+                        }
+                    }
+
+                    TextButton(
+                        onClick = {
+
+                            viewModel.limpiarVentaExitosa()
+                        },
+                        enabled = !imprimiendo
+                    ) {
+
+                        Text("Cerrar")
+                    }
                 }
             }
         )

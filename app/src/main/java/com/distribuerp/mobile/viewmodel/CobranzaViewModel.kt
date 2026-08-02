@@ -14,6 +14,7 @@ import com.distribuerp.mobile.models.PagoRequest
 import com.distribuerp.mobile.models.Venta
 import com.distribuerp.mobile.repository.ClienteRepository
 import com.distribuerp.mobile.repository.CobranzaRepository
+import com.distribuerp.mobile.repository.mensajeAmigable
 
 data class ResultadoPago(
     val pago: Pago,
@@ -80,7 +81,7 @@ class CobranzaViewModel(
             },
             onError = { t ->
                 cargandoClientes = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }
@@ -120,7 +121,7 @@ class CobranzaViewModel(
             },
             onError = { t ->
                 cargandoEstadoCuenta = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }
@@ -176,7 +177,7 @@ class CobranzaViewModel(
             },
             onError = { t ->
                 guardando = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }

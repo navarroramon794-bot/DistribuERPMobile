@@ -1,7 +1,31 @@
+import groovy.json.JsonSlurper
+import java.io.File
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+
+val versionJsonPath = providers.gradleProperty("versionJsonPath").getOrElse("C:/Distribu-erp/version.json")
+
+fun loadVersionInfo(): Pair<Int, String> {
+    val archivo = File(versionJsonPath)
+    if (!archivo.exists()) return 1 to "0.9.0"
+    return try {
+        val json = JsonSlurper().parse(archivo) as Map<*, *>
+        val version = json["version"] as? String ?: "0.9.0"
+        val build = when (val valor = json["build"]) {
+            is Number -> valor.toInt()
+            is String -> valor.filter { it.isDigit() }.toIntOrNull() ?: 1
+            else -> 1
+        }
+        build to version
+    } catch (_: Exception) {
+        1 to "0.9.0"
+    }
+}
+
+val (versionCodeVal, versionNameVal) = loadVersionInfo()
 
 android {
     namespace = "com.distribuerp.mobile"
@@ -15,8 +39,9 @@ android {
         applicationId = "com.distribuerp.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.9.0"
+        versionCode = versionCodeVal
+        versionName = versionNameVal
+        buildConfigField("String", "APP_VERSION", "\"$versionNameVal\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -34,6 +59,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

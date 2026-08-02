@@ -11,6 +11,7 @@ import com.distribuerp.mobile.models.ItemInventario
 import com.distribuerp.mobile.models.Vendedor
 import com.distribuerp.mobile.repository.InventarioRepository
 import com.distribuerp.mobile.repository.VendedorRepository
+import com.distribuerp.mobile.repository.mensajeAmigable
 
 class InventarioViewModel(
     private val inventarioRepository: InventarioRepository,
@@ -57,7 +58,7 @@ class InventarioViewModel(
             },
             onError = { t ->
                 cargandoVendedores = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }
@@ -91,7 +92,7 @@ class InventarioViewModel(
             },
             onError = { t ->
                 cargandoInventario = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }

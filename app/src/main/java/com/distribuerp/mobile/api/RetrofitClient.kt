@@ -13,6 +13,8 @@ object RetrofitClient {
     private const val BASE_URL =
         "https://distribu-erp.onrender.com/"
 
+    var onSessionExpirada: (() -> Unit)? = null
+
     private val cookieJar = object : CookieJar {
 
         private val cookies = mutableMapOf<String, MutableList<Cookie>>()
@@ -29,14 +31,43 @@ object RetrofitClient {
             url: HttpUrl
         ): List<Cookie> =
             cookies[url.host()] ?: emptyList()
+
+        fun limpiar() {
+            cookies.clear()
+        }
+
+        fun tieneCookies(): Boolean =
+            cookies.values.any { lista ->
+                lista.any { it.expiresAt() > System.currentTimeMillis() }
+            }
     }
 
     private val client =
         OkHttpClient.Builder()
             .cookieJar(cookieJar)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val response = chain.proceed(request)
+                val ruta = request.url().encodedPath()
+
+                if (response.code() == 302 ||
+                    response.code() == 401 ||
+                    response.code() == 403
+                ) {
+                    if (ruta.startsWith("/api/") &&
+                        ruta != "/api/login"
+                    ) {
+                        onSessionExpirada?.invoke()
+                    }
+                }
+
+                response
+            }
             .build()
 
     val api: ApiService by lazy {
@@ -50,4 +81,11 @@ object RetrofitClient {
             .build()
             .create(ApiService::class.java)
     }
+
+    fun limpiarCookies() {
+        cookieJar.limpiar()
+    }
+
+    fun tieneCookies(): Boolean =
+        cookieJar.tieneCookies()
 }

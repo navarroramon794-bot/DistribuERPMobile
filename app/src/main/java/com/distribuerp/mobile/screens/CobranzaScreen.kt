@@ -43,14 +43,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.distribuerp.mobile.models.EstadoCuentaResponse
 import com.distribuerp.mobile.models.Venta
+import com.distribuerp.mobile.printing.PrinterRepository
 import com.distribuerp.mobile.ui.components.AvisoMensaje
 import com.distribuerp.mobile.ui.components.BarraBusqueda
 import com.distribuerp.mobile.ui.components.EmptyContent
@@ -60,6 +63,7 @@ import com.distribuerp.mobile.ui.components.LoadingContent
 import com.distribuerp.mobile.ui.components.SelectorDesplegable
 import com.distribuerp.mobile.ui.components.formatearDinero
 import com.distribuerp.mobile.viewmodel.CobranzaViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,8 +84,25 @@ fun CobranzaScreen(
     val error = viewModel.error
     val mensaje = viewModel.mensaje
 
+    val contexto = LocalContext.current
+    val impresoraRepositorio = remember {
+        PrinterRepository(contexto.applicationContext)
+    }
+    val scopeImpresion = rememberCoroutineScope()
+    var imprimiendo by remember {
+        mutableStateOf(false)
+    }
+    var errorImpresion by remember {
+        mutableStateOf<String?>(null)
+    }
+
     var busqueda by remember {
         mutableStateOf("")
+    }
+
+    LaunchedEffect(resultadoPago) {
+        imprimiendo = false
+        errorImpresion = null
     }
 
     val filtradas = remember(ventasPendientes, busqueda) {
@@ -494,18 +515,81 @@ fun CobranzaScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
+
+                    errorImpresion?.let { mensajeError ->
+
+                        Text(
+                            text = mensajeError,
+                            style =
+                                MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             },
             confirmButton = {
 
-                TextButton(
-                    onClick = {
-
-                        viewModel.aceptarExito()
-                    }
+                Row(
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp)
                 ) {
 
-                    Text("Aceptar")
+                    TextButton(
+                        onClick = {
+
+                            imprimiendo = true
+                            errorImpresion = null
+
+                            scopeImpresion.launch {
+
+                                val resultadoImpresion =
+                                    impresoraRepositorio
+                                        .imprimirReciboCobranza(
+                                            pago = resultado.pago,
+                                            venta = ventaSeleccionada,
+                                            saldoRestante =
+                                                resultado
+                                                    .saldoRestante
+                                        )
+                                imprimiendo = false
+
+                                if (resultadoImpresion.ok) {
+
+                                    viewModel.aceptarExito()
+
+                                } else {
+
+                                    errorImpresion =
+                                        resultadoImpresion.mensaje
+                                }
+                            }
+                        },
+                        enabled = !imprimiendo
+                    ) {
+
+                        if (imprimiendo) {
+
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+
+                        } else {
+
+                            Text("Imprimir Recibo")
+                        }
+                    }
+
+                    TextButton(
+                        onClick = {
+
+                            viewModel.aceptarExito()
+                        },
+                        enabled = !imprimiendo
+                    ) {
+
+                        Text("Cerrar")
+                    }
                 }
             }
         )

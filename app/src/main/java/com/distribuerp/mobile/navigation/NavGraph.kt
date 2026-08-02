@@ -5,16 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -26,8 +22,12 @@ import androidx.navigation.navArgument
 import com.distribuerp.mobile.screens.ClienteDetalleScreen
 import com.distribuerp.mobile.screens.ClienteFormScreen
 import com.distribuerp.mobile.screens.ClientesScreen
+import com.distribuerp.mobile.screens.AcercaDeScreen
 import com.distribuerp.mobile.screens.CobranzaScreen
+import com.distribuerp.mobile.screens.ConfiguracionScreen
 import com.distribuerp.mobile.screens.DashboardScreen
+import com.distribuerp.mobile.screens.DiagnosticoScreen
+import com.distribuerp.mobile.screens.ImpresoraScreen
 import com.distribuerp.mobile.screens.InventarioScreen
 import com.distribuerp.mobile.screens.LoginScreen
 import com.distribuerp.mobile.screens.NuevaVentaScreen
@@ -61,6 +61,10 @@ object Rutas {
     const val INVENTARIO = "inventario"
     const val NUEVA_VENTA = "nueva_venta"
     const val COBRANZA = "cobranza"
+    const val CONFIGURACION = "configuracion"
+    const val IMPRESORA = "impresora"
+    const val DIAGNOSTICO = "diagnostico"
+    const val ACERCA_DE = "acerca_de"
 
     fun clienteDetalle(clienteId: Int): String =
         "clientes/$clienteId"
@@ -115,7 +119,6 @@ fun NavGraph() {
     val rutaActual = backStackEntry?.destination?.route
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(sesion, rutaActual) {
@@ -386,6 +389,51 @@ fun NavGraph() {
                     )
                 }
 
+                composable(Rutas.CONFIGURACION) {
+                    ConfiguracionScreen(
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onAbrirImpresora = {
+                            navController.navigate(Rutas.IMPRESORA)
+                        },
+                        onAbrirDiagnostico = {
+                            navController.navigate(Rutas.DIAGNOSTICO)
+                        },
+                        onAbrirAcercaDe = {
+                            navController.navigate(Rutas.ACERCA_DE)
+                        }
+                    )
+                }
+
+                composable(Rutas.IMPRESORA) {
+                    ImpresoraScreen(
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        }
+                    )
+                }
+
+                composable(Rutas.DIAGNOSTICO) {
+                    DiagnosticoScreen(
+                        onVolver = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Rutas.ACERCA_DE) {
+                    AcercaDeScreen(
+                        onVolver = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
                 composable(
                     route = Rutas.VENDEDOR_DETALLE,
                     arguments = listOf(
@@ -441,11 +489,6 @@ fun NavGraph() {
                     )
                 }
             }
-
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
         }
     }
 
@@ -467,24 +510,11 @@ fun NavGraph() {
 
                         val ruta = item.ruta
 
-                        when {
+                        if (ruta != rutaActual) {
 
-                            ruta == null -> {
-
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        "El módulo \"${item.etiqueta}\" " +
-                                                "no está disponible aún"
-                                    )
-                                }
-                            }
-
-                            ruta != rutaActual -> {
-
-                                navController.navigate(ruta) {
-                                    popUpTo(Rutas.DASHBOARD)
-                                    launchSingleTop = true
-                                }
+                            navController.navigate(ruta) {
+                                popUpTo(Rutas.DASHBOARD)
+                                launchSingleTop = true
                             }
                         }
                     },

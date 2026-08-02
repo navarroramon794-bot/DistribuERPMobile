@@ -6,6 +6,21 @@
     <uses-permission
         android:name="android.permission.INTERNET"/>
 
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30" />
+
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -17,10 +32,9 @@
         android:theme="@style/Theme.DistribuERPMobile">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.DistribuERPMobile"
-            android:windowSoftInputMode="adjustResize">
+            android:theme="@style/Theme.DistribuERPMobile.Splash">
 
             <intent-filter>
                 <action
@@ -31,6 +45,12 @@
             </intent-filter>
 
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.DistribuERPMobile"
+            android:windowSoftInputMode="adjustResize" />
 
     </application>
 

@@ -21,6 +21,7 @@ import com.distribuerp.mobile.models.VendedorResponse
 import com.distribuerp.mobile.models.VendedoresResponse
 import com.distribuerp.mobile.models.VentaRequest
 import com.distribuerp.mobile.models.VentaResponse
+import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -38,6 +39,9 @@ interface ApiService {
     fun login(
         @Body datos: LoginRequest
     ): Call<LoginResponse>
+
+    @GET("logout")
+    fun logout(): Call<ResponseBody>
 
     @GET("api/dashboard")
     fun getDashboard(): Call<DashboardResponse>

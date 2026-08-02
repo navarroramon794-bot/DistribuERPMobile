@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.distribuerp.mobile.models.Cliente
 import com.distribuerp.mobile.models.ClienteRequest
 import com.distribuerp.mobile.repository.ClienteRepository
+import com.distribuerp.mobile.repository.mensajeAmigable
 
 class ClienteViewModel(
     private val repository: ClienteRepository
@@ -50,7 +51,7 @@ class ClienteViewModel(
             },
             onError = { t ->
                 loading = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }
@@ -67,7 +68,7 @@ class ClienteViewModel(
             },
             onError = { t ->
                 cargandoDetalle = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }
@@ -88,7 +89,7 @@ class ClienteViewModel(
 
         val alError: (Throwable) -> Unit = { t ->
             guardando = false
-            mensaje = t.message ?: "Error de conexión"
+            mensaje = mensajeAmigable(t)
         }
 
         if (id == null) {
@@ -123,7 +124,7 @@ class ClienteViewModel(
             },
             onError = { t ->
                 eliminando = false
-                mensaje = t.message ?: "Error de conexión"
+                mensaje = mensajeAmigable(t)
             }
         )
     }

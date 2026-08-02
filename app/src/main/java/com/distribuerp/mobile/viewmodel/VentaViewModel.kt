@@ -18,6 +18,7 @@ import com.distribuerp.mobile.repository.ClienteRepository
 import com.distribuerp.mobile.repository.ProductoRepository
 import com.distribuerp.mobile.repository.VendedorRepository
 import com.distribuerp.mobile.repository.VentaRepository
+import com.distribuerp.mobile.repository.mensajeAmigable
 
 data class ItemTicket(
     val producto: Producto,
@@ -94,7 +95,7 @@ class VentaViewModel(
                 terminar()
             },
             onError = { t ->
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
                 terminar()
             }
         )
@@ -110,7 +111,7 @@ class VentaViewModel(
                 terminar()
             },
             onError = { t ->
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
                 terminar()
             }
         )
@@ -121,7 +122,7 @@ class VentaViewModel(
                 terminar()
             },
             onError = { t ->
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
                 terminar()
             }
         )
@@ -245,7 +246,7 @@ class VentaViewModel(
             },
             onError = { t ->
                 guardando = false
-                error = t.message ?: "Error de conexión"
+                error = mensajeAmigable(t)
             }
         )
     }

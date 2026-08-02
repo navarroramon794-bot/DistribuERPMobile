@@ -17,9 +17,12 @@ import com.distribuerp.mobile.data.UsuarioGuardado
 import com.distribuerp.mobile.models.LoginRequest
 import com.distribuerp.mobile.models.LoginResponse
 import com.distribuerp.mobile.models.PingResponse
+import com.distribuerp.mobile.repository.mensajeAmigable
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -47,6 +50,19 @@ class AuthViewModel(
         )
 
     init {
+        RetrofitClient.onSessionExpirada = {
+            cerrarSesionLocal()
+        }
+
+        viewModelScope.launch {
+            val haySesion =
+                sessionManager.sesion.first() != null
+
+            if (haySesion && !RetrofitClient.tieneCookies()) {
+                cerrarSesionLocal()
+            }
+        }
+
         checkServidor()
     }
 
@@ -77,10 +93,7 @@ class AuthViewModel(
                     ) {
                         Log.e("API", "ERROR", t)
 
-                        pingEstado =
-                            t.javaClass.simpleName +
-                                    "\n" +
-                                    (t.message ?: "")
+                        pingEstado = mensajeAmigable(t)
                     }
                 }
             )
@@ -168,7 +181,7 @@ class AuthViewModel(
                     ) {
                         loginUiState = loginUiState.copy(
                             enviando = false,
-                            mensaje = t.message ?: "Error de conexión"
+                            mensaje = mensajeAmigable(t)
                         )
                     }
                 }
@@ -176,7 +189,31 @@ class AuthViewModel(
     }
 
     fun cerrarSesion() {
+        RetrofitClient.api
+            .logout()
+            .enqueue(
+                object : Callback<ResponseBody> {
+
+                    override fun onResponse(
+                        call: Call<ResponseBody>,
+                        response: Response<ResponseBody>
+                    ) {
+                    }
+
+                    override fun onFailure(
+                        call: Call<ResponseBody>,
+                        t: Throwable
+                    ) {
+                    }
+                }
+            )
+
+        cerrarSesionLocal()
+    }
+
+    private fun cerrarSesionLocal() {
         viewModelScope.launch {
+            RetrofitClient.limpiarCookies()
             sessionManager.cerrarSesion()
         }
     }

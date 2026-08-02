@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PointOfSale
@@ -33,7 +31,7 @@ import androidx.compose.ui.unit.dp
 data class ItemMenu(
     val etiqueta: String,
     val icono: ImageVector,
-    val ruta: String?
+    val ruta: String
 )
 
 val itemsMenu = listOf(
@@ -58,11 +56,6 @@ val itemsMenu = listOf(
         ruta = Rutas.VENDEDORES
     ),
     ItemMenu(
-        etiqueta = "Cargas",
-        icono = Icons.Filled.LocalShipping,
-        ruta = null
-    ),
-    ItemMenu(
         etiqueta = "Inventario",
         icono = Icons.Filled.Inventory,
         ruta = Rutas.INVENTARIO
@@ -78,14 +71,9 @@ val itemsMenu = listOf(
         ruta = Rutas.COBRANZA
     ),
     ItemMenu(
-        etiqueta = "Reportes",
-        icono = Icons.Filled.BarChart,
-        ruta = null
-    ),
-    ItemMenu(
         etiqueta = "Configuración",
         icono = Icons.Filled.Settings,
-        ruta = null
+        ruta = Rutas.CONFIGURACION
     )
 )
 
@@ -147,9 +135,7 @@ fun DrawerContenido(
                             contentDescription = item.etiqueta
                         )
                     },
-                    selected =
-                        item.ruta != null
-                        && item.ruta == rutaActual,
+                    selected = item.ruta == rutaActual,
                     onClick = {
 
                         onSeleccionar(item)

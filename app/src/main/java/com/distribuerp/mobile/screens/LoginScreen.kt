@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.distribuerp.mobile.BuildConfig
 import com.distribuerp.mobile.viewmodel.AuthViewModel
 
 @Composable
@@ -60,6 +61,12 @@ fun LoginScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    text = "Versión ${BuildConfig.APP_VERSION}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(
