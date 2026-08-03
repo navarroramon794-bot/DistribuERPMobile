@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.distribuerp.mobile.models.Carga
+import com.distribuerp.mobile.models.Compra
 import com.distribuerp.mobile.models.Pago
 import com.distribuerp.mobile.models.Venta
 import kotlinx.coroutines.flow.Flow
@@ -129,6 +131,38 @@ class PrinterRepository(private val context: Context) {
         return resultadoFinal(
             enviado = enviado,
             mensajeExito = "Recibo enviado a la impresora"
+        )
+    }
+
+    suspend fun imprimirComprobanteCarga(carga: Carga): ResultadoImpresion {
+        val preparado = prepararConexion()
+        if (!preparado.ok) {
+            return preparado
+        }
+
+        val enviado = BluetoothPrinterManager.escribir(
+            EscPosBuilder.ticketCarga(carga)
+        )
+
+        return resultadoFinal(
+            enviado = enviado,
+            mensajeExito = "Comprobante de carga enviado a la impresora"
+        )
+    }
+
+    suspend fun imprimirComprobanteCompra(compra: Compra): ResultadoImpresion {
+        val preparado = prepararConexion()
+        if (!preparado.ok) {
+            return preparado
+        }
+
+        val enviado = BluetoothPrinterManager.escribir(
+            EscPosBuilder.ticketCompra(compra)
+        )
+
+        return resultadoFinal(
+            enviado = enviado,
+            mensajeExito = "Comprobante de compra enviado a la impresora"
         )
     }
 

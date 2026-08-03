@@ -17,14 +17,13 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -52,7 +51,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.distribuerp.mobile.models.Producto
-import com.distribuerp.mobile.models.Vendedor
 import com.distribuerp.mobile.printing.PrinterRepository
 import com.distribuerp.mobile.ui.components.AvisoMensaje
 import com.distribuerp.mobile.ui.components.BarraBusqueda
@@ -60,28 +58,26 @@ import com.distribuerp.mobile.ui.components.EmptyContent
 import com.distribuerp.mobile.ui.components.ErrorContent
 import com.distribuerp.mobile.ui.components.LoadingContent
 import com.distribuerp.mobile.ui.components.SelectorDesplegable
+import com.distribuerp.mobile.ui.components.formatearCantidad
 import com.distribuerp.mobile.ui.components.formatearDinero
-import com.distribuerp.mobile.viewmodel.ItemTicket
-import com.distribuerp.mobile.viewmodel.VentaViewModel
+import com.distribuerp.mobile.viewmodel.CompraViewModel
+import com.distribuerp.mobile.viewmodel.ItemCompraTicket
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevaVentaScreen(
-    viewModel: VentaViewModel,
-    onAbrirMenu: () -> Unit,
-    onFinalizar: () -> Unit
+fun NuevaCompraScreen(
+    viewModel: CompraViewModel,
+    onVolver: () -> Unit
 ) {
-    val cargandoInicial = viewModel.cargandoInicial
-    val vendedores = viewModel.vendedores
-    val clientes = viewModel.clientes
+    val cargando = viewModel.cargando
+    val proveedores = viewModel.proveedores
     val productos = viewModel.productos
-    val vendedorSeleccionado = viewModel.vendedorSeleccionado
-    val clienteSeleccionado = viewModel.clienteSeleccionado
+    val proveedorSeleccionado = viewModel.proveedorSeleccionado
     val items = viewModel.items
-    val total = viewModel.total
+    val observaciones = viewModel.observaciones
     val guardando = viewModel.guardando
-    val ventaExitosa = viewModel.ventaExitosa
+    val compraExitosa = viewModel.compraExitosa
     val error = viewModel.error
     val mensaje = viewModel.mensaje
 
@@ -96,18 +92,14 @@ fun NuevaVentaScreen(
     var errorImpresion by remember {
         mutableStateOf<String?>(null)
     }
-    var exitoImpresion by remember {
-        mutableStateOf<String?>(null)
-    }
 
     var busqueda by remember {
         mutableStateOf("")
     }
 
-    LaunchedEffect(ventaExitosa) {
+    LaunchedEffect(compraExitosa) {
         imprimiendo = false
         errorImpresion = null
-        exitoImpresion = null
     }
 
     val filtrados = remember(productos, busqueda) {
@@ -132,25 +124,24 @@ fun NuevaVentaScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.cargarDatos()
+        viewModel.cargarFormulario()
     }
 
     Scaffold(
         topBar = {
-
             TopAppBar(
                 title = {
-                    Text("Nueva Venta")
+                    Text("Nueva Compra")
                 },
                 navigationIcon = {
 
                     IconButton(
-                        onClick = onAbrirMenu
+                        onClick = onVolver
                     ) {
 
                         Icon(
-                            imageVector = Icons.Filled.Menu,
-                            contentDescription = "Abrir menú"
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver"
                         )
                     }
                 }
@@ -160,7 +151,7 @@ fun NuevaVentaScreen(
 
         when {
 
-            cargandoInicial -> {
+            cargando -> {
 
                 Box(
                     modifier = Modifier
@@ -172,7 +163,7 @@ fun NuevaVentaScreen(
                 }
             }
 
-            error != null && vendedores.isEmpty() -> {
+            error != null && proveedores.isEmpty() -> {
 
                 Box(
                     modifier = Modifier
@@ -184,7 +175,7 @@ fun NuevaVentaScreen(
                         error = error,
                         onReintentar = {
 
-                            viewModel.cargarDatos()
+                            viewModel.cargarFormulario()
                         }
                     )
                 }
@@ -228,13 +219,13 @@ fun NuevaVentaScreen(
                         }
                     }
 
-                    if (vendedores.isEmpty()) {
+                    if (proveedores.isEmpty()) {
 
                         item {
 
                             EmptyContent(
-                                mensaje = "No hay vendedores registrados",
-                                icono = Icons.Filled.Badge,
+                                mensaje = "No hay proveedores activos registrados",
+                                icono = Icons.Filled.Storefront,
                                 expandido = false
                             )
                         }
@@ -244,44 +235,34 @@ fun NuevaVentaScreen(
                         item {
 
                             SelectorDesplegable(
-                                etiqueta = "Vendedor",
-                                seleccionado = vendedorSeleccionado,
-                                opciones = vendedores,
+                                etiqueta = "Proveedor",
+                                seleccionado = proveedorSeleccionado,
+                                opciones = proveedores,
                                 textoDe = { it.nombre },
                                 onSeleccionar = {
 
-                                    viewModel.seleccionarVendedor(it)
+                                    viewModel.seleccionarProveedor(it)
                                 }
                             )
                         }
                     }
 
-                    if (clientes.isEmpty()) {
+                    item {
 
-                        item {
+                        OutlinedTextField(
+                            value = observaciones,
+                            onValueChange = {
 
-                            EmptyContent(
-                                mensaje = "No hay clientes registrados",
-                                icono = Icons.Filled.People,
-                                expandido = false
-                            )
-                        }
-
-                    } else {
-
-                        item {
-
-                            SelectorDesplegable(
-                                etiqueta = "Cliente",
-                                seleccionado = clienteSeleccionado,
-                                opciones = clientes,
-                                textoDe = { it.nombre },
-                                onSeleccionar = {
-
-                                    viewModel.seleccionarCliente(it)
-                                }
-                            )
-                        }
+                                viewModel.cambiarObservaciones(it)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = {
+                                Text("Observaciones")
+                            },
+                            placeholder = {
+                                Text("Notas de la compra")
+                            }
+                        )
                     }
 
                     item {
@@ -302,7 +283,7 @@ fun NuevaVentaScreen(
                         item {
 
                             EmptyContent(
-                                mensaje = "No hay productos para agregar",
+                                mensaje = "No hay productos disponibles",
                                 icono = Icons.Filled.Search,
                                 expandido = false
                             )
@@ -315,7 +296,7 @@ fun NuevaVentaScreen(
                             key = { "buscar_${it.id}" }
                         ) { producto ->
 
-                            TarjetaProductoBusqueda(
+                            TarjetaProductoCompra(
                                 producto = producto,
                                 onAgregar = {
 
@@ -328,7 +309,7 @@ fun NuevaVentaScreen(
                     item {
 
                         Text(
-                            text = "Productos de la venta",
+                            text = "Productos de la compra",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(
@@ -357,7 +338,7 @@ fun NuevaVentaScreen(
                             }
                         ) { indice, item ->
 
-                            TarjetaItemVenta(
+                            TarjetaItemCompra(
                                 item = item,
                                 onCambiarCantidad = { texto ->
 
@@ -403,7 +384,11 @@ fun NuevaVentaScreen(
                                     )
 
                                     Text(
-                                        text = formatearDinero(total),
+                                        text = formatearDinero(
+                                            items.sumOf {
+                                                it.cantidad() * it.producto.costo
+                                            }
+                                        ),
                                         style =
                                             MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold,
@@ -419,12 +404,11 @@ fun NuevaVentaScreen(
                             Button(
                                 onClick = {
 
-                                    viewModel.registrarVenta()
+                                    viewModel.registrarCompra()
                                 },
                                 enabled =
                                     !guardando
-                                    && vendedorSeleccionado != null
-                                    && clienteSeleccionado != null,
+                                    && proveedorSeleccionado != null,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
 
@@ -440,7 +424,7 @@ fun NuevaVentaScreen(
 
                                 } else {
 
-                                    Text("Registrar Venta")
+                                    Text("Registrar Compra")
                                 }
                             }
                         }
@@ -450,16 +434,16 @@ fun NuevaVentaScreen(
         }
     }
 
-    ventaExitosa?.let { venta ->
+    compraExitosa?.let { compra ->
 
         AlertDialog(
             onDismissRequest = {
 
-                viewModel.limpiarVentaExitosa()
+                viewModel.limpiarCompraExitosa()
             },
             title = {
 
-                Text("Venta registrada correctamente")
+                Text("Compra registrada correctamente")
             },
             text = {
 
@@ -479,7 +463,25 @@ fun NuevaVentaScreen(
                         )
 
                         Text(
-                            text = venta.folio,
+                            text = compra.folio,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.SpaceBetween
+                    ) {
+
+                        Text(
+                            text = "Proveedor",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Text(
+                            text = compra.proveedor ?: "—",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -497,7 +499,7 @@ fun NuevaVentaScreen(
                         )
 
                         Text(
-                            text = formatearDinero(venta.total),
+                            text = formatearDinero(compra.total),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -510,17 +512,6 @@ fun NuevaVentaScreen(
                             style =
                                 MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    exitoImpresion?.let { mensajeExito ->
-
-                        Text(
-                            text = mensajeExito,
-                            style =
-                                MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
@@ -537,19 +528,17 @@ fun NuevaVentaScreen(
 
                             imprimiendo = true
                             errorImpresion = null
-                            exitoImpresion = null
 
                             scopeImpresion.launch {
 
                                 val resultado =
                                     impresoraRepositorio
-                                        .imprimirTicketVenta(venta)
+                                        .imprimirComprobanteCompra(compra)
                                 imprimiendo = false
 
                                 if (resultado.ok) {
 
-                                    exitoImpresion =
-                                        resultado.mensaje
+                                    viewModel.limpiarCompraExitosa()
 
                                 } else {
 
@@ -570,15 +559,14 @@ fun NuevaVentaScreen(
 
                         } else {
 
-                            Text("Imprimir Ticket")
+                            Text("Imprimir Comprobante")
                         }
                     }
 
                     TextButton(
                         onClick = {
 
-                            viewModel.limpiarVentaExitosa()
-                            onFinalizar()
+                            viewModel.limpiarCompraExitosa()
                         },
                         enabled = !imprimiendo
                     ) {
@@ -592,7 +580,7 @@ fun NuevaVentaScreen(
 }
 
 @Composable
-private fun TarjetaProductoBusqueda(
+private fun TarjetaProductoCompra(
     producto: Producto,
     onAgregar: () -> Unit
 ) {
@@ -619,10 +607,15 @@ private fun TarjetaProductoBusqueda(
                 )
 
                 Text(
-                    text = "Código ${producto.codigo} · " +
-                            formatearDinero(producto.precio),
+                    text = "Código ${producto.codigo}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text(
+                    text = "Costo " + formatearDinero(producto.costo),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -645,16 +638,13 @@ private fun TarjetaProductoBusqueda(
 }
 
 @Composable
-private fun TarjetaItemVenta(
-    item: ItemTicket,
+private fun TarjetaItemCompra(
+    item: ItemCompraTicket,
     onCambiarCantidad: (String) -> Unit,
     onIncrementar: () -> Unit,
     onDecrementar: () -> Unit,
     onEliminar: () -> Unit
 ) {
-    val cantidad = item.cantidadTexto.toDoubleOrNull() ?: 0.0
-    val subtotal = cantidad * item.producto.precio
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp)
@@ -682,7 +672,7 @@ private fun TarjetaItemVenta(
                     )
 
                     Text(
-                        text = formatearDinero(item.producto.precio),
+                        text = "Código ${item.producto.codigo}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -739,12 +729,29 @@ private fun TarjetaItemVenta(
                     modifier = Modifier.weight(1f)
                 )
 
-                Text(
-                    text = formatearDinero(subtotal),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+
+                    Text(
+                        text = formatearDinero(
+                            item.cantidad() * item.producto.costo
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = formatearDinero(item.producto.costo) + " c/u",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
+}
+
+private fun ItemCompraTicket.cantidad(): Double {
+    return cantidadTexto.toDoubleOrNull() ?: 0.0
 }

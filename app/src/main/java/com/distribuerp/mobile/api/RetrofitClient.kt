@@ -1,5 +1,6 @@
 package com.distribuerp.mobile.api
 
+import com.distribuerp.mobile.BuildConfig
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -10,8 +11,8 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    private const val BASE_URL =
-        "https://distribu-erp.onrender.com/"
+    private val BASE_URL: String =
+        BuildConfig.API_BASE_URL
 
     var onSessionExpirada: (() -> Unit)? = null
 

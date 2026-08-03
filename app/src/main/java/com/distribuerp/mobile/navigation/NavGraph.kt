@@ -19,10 +19,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.distribuerp.mobile.screens.CargaDetalleScreen
+import com.distribuerp.mobile.screens.CargasScreen
 import com.distribuerp.mobile.screens.ClienteDetalleScreen
 import com.distribuerp.mobile.screens.ClienteFormScreen
 import com.distribuerp.mobile.screens.ClientesScreen
+import com.distribuerp.mobile.screens.CompraDetalleScreen
+import com.distribuerp.mobile.screens.ComprasScreen
 import com.distribuerp.mobile.screens.AcercaDeScreen
+import com.distribuerp.mobile.screens.ActualizacionesScreen
 import com.distribuerp.mobile.screens.CobranzaScreen
 import com.distribuerp.mobile.screens.ConfiguracionScreen
 import com.distribuerp.mobile.screens.DashboardScreen
@@ -30,18 +35,28 @@ import com.distribuerp.mobile.screens.DiagnosticoScreen
 import com.distribuerp.mobile.screens.ImpresoraScreen
 import com.distribuerp.mobile.screens.InventarioScreen
 import com.distribuerp.mobile.screens.LoginScreen
+import com.distribuerp.mobile.screens.NuevaCargaScreen
+import com.distribuerp.mobile.screens.NuevaCompraScreen
 import com.distribuerp.mobile.screens.NuevaVentaScreen
 import com.distribuerp.mobile.screens.ProductoDetalleScreen
 import com.distribuerp.mobile.screens.ProductoFormScreen
 import com.distribuerp.mobile.screens.ProductosScreen
+import com.distribuerp.mobile.screens.ProveedorDetalleScreen
+import com.distribuerp.mobile.screens.ProveedorFormScreen
+import com.distribuerp.mobile.screens.ProveedoresScreen
+import com.distribuerp.mobile.screens.ReporteFormScreen
+import com.distribuerp.mobile.screens.ReportesScreen
 import com.distribuerp.mobile.screens.VendedorDetalleScreen
 import com.distribuerp.mobile.screens.VendedorFormScreen
 import com.distribuerp.mobile.screens.VendedoresScreen
 import com.distribuerp.mobile.viewmodel.AuthViewModel
+import com.distribuerp.mobile.viewmodel.CargaViewModel
 import com.distribuerp.mobile.viewmodel.ClienteViewModel
 import com.distribuerp.mobile.viewmodel.CobranzaViewModel
+import com.distribuerp.mobile.viewmodel.CompraViewModel
 import com.distribuerp.mobile.viewmodel.InventarioViewModel
 import com.distribuerp.mobile.viewmodel.ProductoViewModel
+import com.distribuerp.mobile.viewmodel.ProveedorViewModel
 import com.distribuerp.mobile.viewmodel.VendedorViewModel
 import com.distribuerp.mobile.viewmodel.VentaViewModel
 import kotlinx.coroutines.launch
@@ -59,12 +74,24 @@ object Rutas {
     const val VENDEDOR_DETALLE = "vendedores/{vendedorId}"
     const val VENDEDOR_FORM = "vendedores/formulario?vendedorId={vendedorId}"
     const val INVENTARIO = "inventario"
+    const val CARGAS = "cargas"
+    const val CARGA_DETALLE = "cargas/{cargaId}"
+    const val NUEVA_CARGA = "nueva_carga"
+    const val PROVEEDORES = "proveedores"
+    const val PROVEEDOR_DETALLE = "proveedores/{proveedorId}"
+    const val PROVEEDOR_FORM = "proveedores/formulario?proveedorId={proveedorId}"
+    const val COMPRAS = "compras"
+    const val COMPRA_DETALLE = "compras/{compraId}"
+    const val NUEVA_COMPRA = "nueva_compra"
     const val NUEVA_VENTA = "nueva_venta"
     const val COBRANZA = "cobranza"
+    const val REPORTES = "reportes"
+    const val REPORTE_FORM = "reportes/formulario?tipo={tipo}"
     const val CONFIGURACION = "configuracion"
     const val IMPRESORA = "impresora"
     const val DIAGNOSTICO = "diagnostico"
     const val ACERCA_DE = "acerca_de"
+    const val ACTUALIZACIONES = "actualizaciones"
 
     fun clienteDetalle(clienteId: Int): String =
         "clientes/$clienteId"
@@ -95,6 +122,25 @@ object Rutas {
         } else {
             "vendedores/formulario"
         }
+
+    fun reporteForm(tipo: String): String =
+        "reportes/formulario?tipo=$tipo"
+
+    fun cargaDetalle(cargaId: Int): String =
+        "cargas/$cargaId"
+
+    fun proveedorDetalle(proveedorId: Int): String =
+        "proveedores/$proveedorId"
+
+    fun proveedorForm(proveedorId: Int? = null): String =
+        if (proveedorId != null) {
+            "proveedores/formulario?proveedorId=$proveedorId"
+        } else {
+            "proveedores/formulario"
+        }
+
+    fun compraDetalle(compraId: Int): String =
+        "compras/$compraId"
 }
 
 @Composable
@@ -113,6 +159,12 @@ fun NavGraph() {
         viewModel(factory = VentaViewModel.Factory)
     val cobranzaViewModel: CobranzaViewModel =
         viewModel(factory = CobranzaViewModel.Factory)
+    val cargaViewModel: CargaViewModel =
+        viewModel(factory = CargaViewModel.Factory)
+    val proveedorViewModel: ProveedorViewModel =
+        viewModel(factory = ProveedorViewModel.Factory)
+    val compraViewModel: CompraViewModel =
+        viewModel(factory = CompraViewModel.Factory)
     val sesion by viewModel.sesion.collectAsState()
 
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -367,6 +419,181 @@ fun NavGraph() {
                     )
                 }
 
+                composable(Rutas.CARGAS) {
+                    CargasScreen(
+                        viewModel = cargaViewModel,
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onNuevaCarga = {
+                            navController.navigate(Rutas.NUEVA_CARGA)
+                        },
+                        onVerDetalle = { cargaId ->
+                            navController.navigate(
+                                Rutas.cargaDetalle(cargaId)
+                            )
+                        }
+                    )
+                }
+
+                composable(Rutas.NUEVA_CARGA) {
+                    NuevaCargaScreen(
+                        viewModel = cargaViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.CARGA_DETALLE,
+                    arguments = listOf(
+                        navArgument("cargaId") {
+                            type = NavType.IntType
+                        }
+                    )
+                ) { entrada ->
+
+                    val cargaId =
+                        entrada.arguments?.getInt("cargaId") ?: 0
+
+                    CargaDetalleScreen(
+                        cargaId = cargaId,
+                        viewModel = cargaViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Rutas.PROVEEDORES) {
+                    ProveedoresScreen(
+                        viewModel = proveedorViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onNuevoProveedor = {
+                            navController.navigate(Rutas.proveedorForm())
+                        },
+                        onVerDetalle = { proveedorId ->
+                            navController.navigate(
+                                Rutas.proveedorDetalle(proveedorId)
+                            )
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.PROVEEDOR_DETALLE,
+                    arguments = listOf(
+                        navArgument("proveedorId") {
+                            type = NavType.IntType
+                        }
+                    )
+                ) { entrada ->
+
+                    val proveedorId =
+                        entrada.arguments?.getInt("proveedorId") ?: 0
+
+                    ProveedorDetalleScreen(
+                        proveedorId = proveedorId,
+                        viewModel = proveedorViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onEditar = { id ->
+                            navController.navigate(
+                                Rutas.proveedorForm(id)
+                            )
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.PROVEEDOR_FORM,
+                    arguments = listOf(
+                        navArgument("proveedorId") {
+                            type = NavType.IntType
+                            defaultValue = -1
+                        }
+                    )
+                ) { entrada ->
+
+                    val proveedorId =
+                        entrada.arguments?.getInt("proveedorId") ?: -1
+
+                    ProveedorFormScreen(
+                        proveedorId = if (proveedorId > 0) {
+                            proveedorId
+                        } else {
+                            null
+                        },
+                        viewModel = proveedorViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        },
+                        onGuardado = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Rutas.COMPRAS) {
+                    ComprasScreen(
+                        viewModel = compraViewModel,
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onNuevaCompra = {
+                            navController.navigate(Rutas.NUEVA_COMPRA)
+                        },
+                        onVerDetalle = { compraId ->
+                            navController.navigate(
+                                Rutas.compraDetalle(compraId)
+                            )
+                        }
+                    )
+                }
+
+                composable(Rutas.NUEVA_COMPRA) {
+                    NuevaCompraScreen(
+                        viewModel = compraViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.COMPRA_DETALLE,
+                    arguments = listOf(
+                        navArgument("compraId") {
+                            type = NavType.IntType
+                        }
+                    )
+                ) { entrada ->
+
+                    val compraId =
+                        entrada.arguments?.getInt("compraId") ?: 0
+
+                    CompraDetalleScreen(
+                        compraId = compraId,
+                        viewModel = compraViewModel,
+                        onVolver = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
                 composable(Rutas.NUEVA_VENTA) {
                     NuevaVentaScreen(
                         viewModel = ventaViewModel,
@@ -374,6 +601,9 @@ fun NavGraph() {
                             scope.launch {
                                 drawerState.open()
                             }
+                        },
+                        onFinalizar = {
+                            navController.popBackStack()
                         }
                     )
                 }
@@ -385,6 +615,42 @@ fun NavGraph() {
                             scope.launch {
                                 drawerState.open()
                             }
+                        }
+                    )
+                }
+
+                composable(Rutas.REPORTES) {
+                    ReportesScreen(
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onAbrirReporte = { tipo ->
+                            navController.navigate(
+                                Rutas.reporteForm(tipo)
+                            )
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.REPORTE_FORM,
+                    arguments = listOf(
+                        navArgument("tipo") {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { entrada ->
+
+                    val tipo =
+                        entrada.arguments?.getString("tipo")
+                            ?: "ventas"
+
+                    ReporteFormScreen(
+                        tipoClave = tipo,
+                        onVolver = {
+                            navController.popBackStack()
                         }
                     )
                 }
@@ -404,6 +670,11 @@ fun NavGraph() {
                         },
                         onAbrirAcercaDe = {
                             navController.navigate(Rutas.ACERCA_DE)
+                        },
+                        onAbrirActualizaciones = {
+                            navController.navigate(
+                                Rutas.ACTUALIZACIONES
+                            )
                         }
                     )
                 }
@@ -428,6 +699,14 @@ fun NavGraph() {
 
                 composable(Rutas.ACERCA_DE) {
                     AcercaDeScreen(
+                        onVolver = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Rutas.ACTUALIZACIONES) {
+                    ActualizacionesScreen(
                         onVolver = {
                             navController.popBackStack()
                         }

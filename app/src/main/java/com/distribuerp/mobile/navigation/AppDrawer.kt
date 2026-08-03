@@ -8,13 +8,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PointOfSale
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -61,6 +65,21 @@ val itemsMenu = listOf(
         ruta = Rutas.INVENTARIO
     ),
     ItemMenu(
+        etiqueta = "Cargas",
+        icono = Icons.Filled.LocalShipping,
+        ruta = Rutas.CARGAS
+    ),
+    ItemMenu(
+        etiqueta = "Proveedores",
+        icono = Icons.Filled.Storefront,
+        ruta = Rutas.PROVEEDORES
+    ),
+    ItemMenu(
+        etiqueta = "Compras",
+        icono = Icons.Filled.Receipt,
+        ruta = Rutas.COMPRAS
+    ),
+    ItemMenu(
         etiqueta = "Nueva Venta",
         icono = Icons.Filled.PointOfSale,
         ruta = Rutas.NUEVA_VENTA
@@ -69,6 +88,11 @@ val itemsMenu = listOf(
         etiqueta = "Cobranza",
         icono = Icons.Filled.Payments,
         ruta = Rutas.COBRANZA
+    ),
+    ItemMenu(
+        etiqueta = "Reportes",
+        icono = Icons.Filled.BarChart,
+        ruta = Rutas.REPORTES
     ),
     ItemMenu(
         etiqueta = "Configuración",

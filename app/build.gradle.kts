@@ -8,6 +8,8 @@ plugins {
 
 val versionJsonPath = providers.gradleProperty("versionJsonPath").getOrElse("C:/Distribu-erp/version.json")
 
+val apiUrlProp: String? = providers.gradleProperty("apiUrl").getOrNull()
+
 fun loadVersionInfo(): Pair<Int, String> {
     val archivo = File(versionJsonPath)
     if (!archivo.exists()) return 1 to "0.9.0"
@@ -47,7 +49,21 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField(
+                "String",
+                "API_BASE_URL",
+                "\"${apiUrlProp ?: "http://10.0.2.2:5000/"}\""
+            )
+        }
+
         release {
+            buildConfigField(
+                "String",
+                "API_BASE_URL",
+                "\"${apiUrlProp ?: "https://distribu-erp.onrender.com/"}\""
+            )
+
             optimization {
                 enable = false
             }

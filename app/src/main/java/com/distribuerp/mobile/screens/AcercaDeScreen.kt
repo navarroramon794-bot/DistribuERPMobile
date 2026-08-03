@@ -14,9 +14,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Copyright
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Web
 import androidx.compose.material3.Card
@@ -115,6 +119,16 @@ fun AcercaDeScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
+
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
+
+                    Text(
+                        text = "v${BuildConfig.APP_VERSION}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 
@@ -143,6 +157,18 @@ fun AcercaDeScreen(
                         icono = Icons.Filled.Info,
                         etiqueta = "Versión",
                         valor = BuildConfig.APP_VERSION
+                    )
+
+                    FilaInformacion(
+                        icono = Icons.Filled.Info,
+                        etiqueta = "Build",
+                        valor = BuildConfig.VERSION_CODE.toString()
+                    )
+
+                    FilaInformacion(
+                        icono = Icons.Filled.Info,
+                        etiqueta = "Compatibilidad",
+                        valor = "Android 8.0 (API 26) o superior"
                     )
 
                     FilaInformacion(
@@ -193,6 +219,90 @@ fun AcercaDeScreen(
                     )
                 }
             }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+
+                    Text(
+                        text = "Contacto y soporte",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    FilaInformacion(
+                        icono = Icons.Filled.Web,
+                        etiqueta = "Sitio web",
+                        valor = "https://distribu-erp.onrender.com/"
+                    )
+
+                    FilaInformacion(
+                        icono = Icons.Filled.Email,
+                        etiqueta = "Correo",
+                        valor = "soporte@distribuerp.com"
+                    )
+
+                    FilaInformacion(
+                        icono = Icons.AutoMirrored.Filled.Chat,
+                        etiqueta = "WhatsApp",
+                        valor = "+52 33 0000 0000"
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+
+                    Text(
+                        text = "Legal",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    FilaInformacion(
+                        icono = Icons.Filled.Lock,
+                        etiqueta = "Licencia",
+                        valor = "Uso autorizado para clientes de DistribuERP"
+                    )
+
+                    FilaInformacion(
+                        icono = Icons.Filled.Copyright,
+                        etiqueta = "Copyright",
+                        valor = "© 2026 C&R Technology Solutions"
+                    )
+                }
+            }
+
+            Text(
+                text = "DistribuERP © 2026 · C&R Technology Solutions",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
         }
     }
 }

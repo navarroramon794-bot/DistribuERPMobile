@@ -1,6 +1,8 @@
 package com.distribuerp.mobile.printing
 
 import com.distribuerp.mobile.BuildConfig
+import com.distribuerp.mobile.models.Carga
+import com.distribuerp.mobile.models.Compra
 import com.distribuerp.mobile.models.Pago
 import com.distribuerp.mobile.models.Venta
 import com.distribuerp.mobile.ui.components.formatearDinero
@@ -169,6 +171,7 @@ object EscPosBuilder {
     }
 
     fun ticketCobranza(pago: Pago, venta: Venta?, saldoRestante: Double): ByteArray {
+
         val s = ByteArrayOutputStream()
 
         s.write(init())
@@ -206,7 +209,103 @@ object EscPosBuilder {
         return s.toByteArray()
     }
 
+    fun ticketCarga(carga: Carga): ByteArray {
+        val s = ByteArrayOutputStream()
+
+        s.write(init())
+        s.write(configurarCodepage())
+        s.write(lineaEnBlanco())
+        s.write(separador())
+        s.write(
+            texto(
+                linea = "DistribuERP",
+                alineacion = Alineacion.CENTRO,
+                negritas = true,
+                dobleAncho = true,
+                dobleAlto = true
+            )
+        )
+        s.write(texto("www.distribuerp.com", Alineacion.CENTRO))
+        s.write(lineaEnBlanco())
+        s.write(texto("COMPROBANTE DE CARGA", Alineacion.CENTRO, negritas = true))
+        s.write(lineaEnBlanco())
+        s.write(texto(columna("Folio", carga.folio)))
+        s.write(texto(columna("Fecha", carga.fecha ?: "—")))
+        s.write(texto(columna("Vendedor", carga.vendedor ?: "—")))
+        s.write(separador())
+        s.write(texto(columna("CANT PRODUCTO", "CANTIDAD"), negritas = true))
+        carga.items.forEach { itemCarga ->
+            val cant = formatearCantidad(itemCarga.cantidad)
+            val prefijo = "$cant x "
+            val espacioNombre = ANCHO - prefijo.length - cant.length
+            val nombreCortado = recortar(itemCarga.producto, espacioNombre)
+            s.write(texto(columna(prefijo + nombreCortado, cant)))
+        }
+        s.write(separador())
+        s.write(texto(columna("TOTAL", formatearCantidad(carga.total_cantidad)), negritas = true))
+        if (!carga.observaciones.isNullOrBlank()) {
+            s.write(texto(columna("Observaciones", recortar(carga.observaciones, ANCHO))))
+        }
+        s.write(separador())
+        s.write(lineaEnBlanco())
+        s.write(texto("Carga registrada", Alineacion.CENTRO, negritas = true))
+        s.write(lineaEnBlanco(2))
+        s.write(cortar())
+
+        return s.toByteArray()
+    }
+
+    fun ticketCompra(compra: Compra): ByteArray {
+        val s = ByteArrayOutputStream()
+
+        s.write(init())
+        s.write(configurarCodepage())
+        s.write(lineaEnBlanco())
+        s.write(separador())
+        s.write(
+            texto(
+                linea = "DistribuERP",
+                alineacion = Alineacion.CENTRO,
+                negritas = true,
+                dobleAncho = true,
+                dobleAlto = true
+            )
+        )
+        s.write(texto("www.distribuerp.com", Alineacion.CENTRO))
+        s.write(lineaEnBlanco())
+        s.write(texto("COMPROBANTE DE COMPRA", Alineacion.CENTRO, negritas = true))
+        s.write(lineaEnBlanco())
+        s.write(texto(columna("Folio", compra.folio)))
+        s.write(texto(columna("Fecha", compra.fecha ?: "—")))
+        s.write(texto(columna("Proveedor", compra.proveedor ?: "—")))
+        s.write(separador())
+        s.write(texto(columna("CANT PRODUCTO", "SUBTOTAL"), negritas = true))
+        compra.items.forEach { itemCompra ->
+            s.write(
+                item(
+                    nombre = itemCompra.producto,
+                    cantidad = itemCompra.cantidad,
+                    precio = itemCompra.precio,
+                    subtotal = itemCompra.subtotal
+                )
+            )
+        }
+        s.write(separador())
+        s.write(texto(columna("TOTAL", formatearDinero(compra.total)), negritas = true))
+        if (!compra.observaciones.isNullOrBlank()) {
+            s.write(texto(columna("Observaciones", recortar(compra.observaciones, ANCHO))))
+        }
+        s.write(separador())
+        s.write(lineaEnBlanco())
+        s.write(texto("Compra registrada", Alineacion.CENTRO, negritas = true))
+        s.write(lineaEnBlanco(2))
+        s.write(cortar())
+
+        return s.toByteArray()
+    }
+
     fun ticketPrueba(nombreImpresora: String): ByteArray {
+
         val s = ByteArrayOutputStream()
 
         s.write(init())

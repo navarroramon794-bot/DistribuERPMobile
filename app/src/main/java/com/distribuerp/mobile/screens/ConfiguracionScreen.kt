@@ -43,7 +43,8 @@ fun ConfiguracionScreen(
     onAbrirMenu: () -> Unit,
     onAbrirImpresora: () -> Unit,
     onAbrirDiagnostico: () -> Unit,
-    onAbrirAcercaDe: () -> Unit
+    onAbrirAcercaDe: () -> Unit,
+    onAbrirActualizaciones: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -107,6 +108,14 @@ fun ConfiguracionScreen(
                 onClick = onAbrirAcercaDe
             )
 
+            OpcionConfiguracion(
+                titulo = "Actualizaciones",
+                descripcion = "Buscar nuevas versiones de la aplicación",
+                icono = Icons.Filled.SystemUpdate,
+                habilitada = true,
+                onClick = onAbrirActualizaciones
+            )
+
             Text(
                 text = "Próximamente",
                 style = MaterialTheme.typography.titleMedium,
@@ -126,14 +135,6 @@ fun ConfiguracionScreen(
                 titulo = "Licencia",
                 descripcion = "Información de la licencia",
                 icono = Icons.Filled.Favorite,
-                habilitada = false,
-                onClick = null
-            )
-
-            OpcionConfiguracion(
-                titulo = "Actualizaciones",
-                descripcion = "Buscar nuevas versiones de la aplicación",
-                icono = Icons.Filled.SystemUpdate,
                 habilitada = false,
                 onClick = null
             )
