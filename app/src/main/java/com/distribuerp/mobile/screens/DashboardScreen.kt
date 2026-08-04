@@ -40,6 +40,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -48,6 +50,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.distribuerp.mobile.data.Roles
 import com.distribuerp.mobile.ui.components.ErrorContent
 import com.distribuerp.mobile.ui.components.LoadingContent
 import com.distribuerp.mobile.ui.components.formatearCantidad
@@ -66,6 +69,14 @@ fun DashboardScreen(
     val loading = dashboardViewModel.loading
     val dashboard = dashboardViewModel.dashboard
     val error = dashboardViewModel.error
+    val sesion by authViewModel.sesion.collectAsState()
+
+    val subtitulo =
+        when (sesion?.rol) {
+            Roles.ADMINISTRADOR -> "Administrador"
+            Roles.VENDEDOR -> sesion?.vendedor ?: sesion?.nombre ?: ""
+            else -> ""
+        }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -81,7 +92,7 @@ fun DashboardScreen(
                         )
 
                         Text(
-                            text = "Administrador",
+                            text = subtitulo,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
                                 alpha = 0.8f

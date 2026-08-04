@@ -136,7 +136,11 @@ class AuthViewModel(
                                                 id = usuario.id.toString(),
                                                 nombre = usuario.nombre,
                                                 correo = usuario.correo,
-                                                rol = usuario.rol
+                                                rol = usuario.rol,
+                                                vendedor_id =
+                                                    usuario.vendedor_id
+                                                        ?.toString(),
+                                                vendedor = usuario.vendedor
                                             )
                                         )
                                         loginUiState = loginUiState.copy(

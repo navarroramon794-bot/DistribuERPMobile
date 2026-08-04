@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Print
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,7 +43,8 @@ fun ConfiguracionScreen(
     onAbrirImpresora: () -> Unit,
     onAbrirDiagnostico: () -> Unit,
     onAbrirAcercaDe: () -> Unit,
-    onAbrirActualizaciones: () -> Unit
+    onAbrirActualizaciones: () -> Unit,
+    onAbrirLicencia: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -116,27 +116,12 @@ fun ConfiguracionScreen(
                 onClick = onAbrirActualizaciones
             )
 
-            Text(
-                text = "Próximamente",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
-            )
-
-            OpcionConfiguracion(
-                titulo = "Empresa",
-                descripcion = "Datos de la empresa",
-                icono = Icons.Filled.Settings,
-                habilitada = false,
-                onClick = null
-            )
-
             OpcionConfiguracion(
                 titulo = "Licencia",
                 descripcion = "Información de la licencia",
                 icono = Icons.Filled.Favorite,
-                habilitada = false,
-                onClick = null
+                habilitada = true,
+                onClick = onAbrirLicencia
             )
         }
     }

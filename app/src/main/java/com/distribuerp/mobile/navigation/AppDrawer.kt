@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Dashboard
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.distribuerp.mobile.data.Roles
 
 data class ItemMenu(
     val etiqueta: String,
@@ -38,7 +40,7 @@ data class ItemMenu(
     val ruta: String
 )
 
-val itemsMenu = listOf(
+val itemsMenuAdministrador = listOf(
     ItemMenu(
         etiqueta = "Dashboard",
         icono = Icons.Filled.Dashboard,
@@ -101,11 +103,60 @@ val itemsMenu = listOf(
     )
 )
 
+val itemsMenuVendedor = listOf(
+    ItemMenu(
+        etiqueta = "Dashboard",
+        icono = Icons.Filled.Dashboard,
+        ruta = Rutas.DASHBOARD
+    ),
+    ItemMenu(
+        etiqueta = "Clientes",
+        icono = Icons.Filled.People,
+        ruta = Rutas.CLIENTES
+    ),
+    ItemMenu(
+        etiqueta = "Mi Inventario",
+        icono = Icons.Filled.Inventory,
+        ruta = Rutas.INVENTARIO
+    ),
+    ItemMenu(
+        etiqueta = "Nueva Venta",
+        icono = Icons.Filled.PointOfSale,
+        ruta = Rutas.NUEVA_VENTA
+    ),
+    ItemMenu(
+        etiqueta = "Historial de Ventas",
+        icono = Icons.AutoMirrored.Filled.ReceiptLong,
+        ruta = Rutas.reporteForm("ventas")
+    ),
+    ItemMenu(
+        etiqueta = "Nueva Cobranza",
+        icono = Icons.Filled.Payments,
+        ruta = Rutas.COBRANZA
+    ),
+    ItemMenu(
+        etiqueta = "Historial de Cobranza",
+        icono = Icons.Filled.BarChart,
+        ruta = Rutas.reporteForm("pagos")
+    ),
+    ItemMenu(
+        etiqueta = "Mis Cargas",
+        icono = Icons.Filled.LocalShipping,
+        ruta = Rutas.CARGAS
+    ),
+    ItemMenu(
+        etiqueta = "Configuración",
+        icono = Icons.Filled.Settings,
+        ruta = Rutas.CONFIGURACION
+    )
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawerContenido(
     nombreUsuario: String,
     correoUsuario: String,
+    rol: String?,
     rutaActual: String?,
     onSeleccionar: (ItemMenu) -> Unit,
     onCerrarSesion: () -> Unit
@@ -146,7 +197,14 @@ fun DrawerContenido(
 
             HorizontalDivider()
 
-            itemsMenu.forEach { item ->
+            val items =
+                if (rol == Roles.ADMINISTRADOR) {
+                    itemsMenuAdministrador
+                } else {
+                    itemsMenuVendedor
+                }
+
+            items.forEach { item ->
 
                 NavigationDrawerItem(
                     label = {

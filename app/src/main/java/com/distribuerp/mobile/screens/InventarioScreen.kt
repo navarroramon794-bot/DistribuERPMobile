@@ -50,6 +50,7 @@ import com.distribuerp.mobile.viewmodel.InventarioViewModel
 @Composable
 fun InventarioScreen(
     viewModel: InventarioViewModel,
+    vendedorIdPropio: Int? = null,
     onAbrirMenu: () -> Unit
 ) {
     val cargandoVendedores = viewModel.cargandoVendedores
@@ -85,8 +86,14 @@ fun InventarioScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.cargarVendedores()
+    LaunchedEffect(vendedorIdPropio) {
+        val propio = vendedorIdPropio
+
+        if (propio != null) {
+            viewModel.cargarInventario(propio)
+        } else {
+            viewModel.cargarVendedores()
+        }
     }
 
     Scaffold(
@@ -135,20 +142,23 @@ fun InventarioScreen(
                 .padding(16.dp)
         ) {
 
-            SelectorDesplegable(
-                etiqueta = "Vendedor",
-                seleccionado = vendedorSeleccionado,
-                opciones = vendedores,
-                textoDe = { it.nombre },
-                onSeleccionar = {
+            if (vendedorIdPropio == null) {
 
-                    viewModel.seleccionarVendedor(it)
-                }
-            )
+                SelectorDesplegable(
+                    etiqueta = "Vendedor",
+                    seleccionado = vendedorSeleccionado,
+                    opciones = vendedores,
+                    textoDe = { it.nombre },
+                    onSeleccionar = {
 
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
+                        viewModel.seleccionarVendedor(it)
+                    }
+                )
+
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
+            }
 
             BarraBusqueda(
                 valor = busqueda,
@@ -177,25 +187,35 @@ fun InventarioScreen(
                 modifier = Modifier.height(16.dp)
             )
 
+            val reintentarInicial = {
+                val propio = vendedorIdPropio
+
+                if (propio != null) {
+                    viewModel.cargarInventario(propio)
+                } else {
+                    viewModel.cargarVendedores()
+                }
+            }
+
             when {
 
                 error != null && vendedorSeleccionado == null -> {
 
                     ErrorContent(
                         error = error,
-                        onReintentar = {
-
-                            viewModel.cargarVendedores()
-                        }
+                        onReintentar = reintentarInicial
                     )
                 }
 
-                cargandoVendedores && vendedores.isEmpty() -> {
+                vendedorIdPropio == null &&
+                    cargandoVendedores &&
+                    vendedores.isEmpty() -> {
 
                     LoadingContent()
                 }
 
-                vendedores.isEmpty() -> {
+                vendedorIdPropio == null &&
+                    vendedores.isEmpty() -> {
 
                     EmptyContent(
                         mensaje = "No hay vendedores registrados",

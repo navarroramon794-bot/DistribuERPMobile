@@ -12,6 +12,9 @@ import com.distribuerp.mobile.models.ComprasResponse
 import com.distribuerp.mobile.models.DashboardResponse
 import com.distribuerp.mobile.models.EstadoCuentaResponse
 import com.distribuerp.mobile.models.InventarioResponse
+import com.distribuerp.mobile.models.ActivarRequest
+import com.distribuerp.mobile.models.DemoRequest
+import com.distribuerp.mobile.models.LicenciaResponse
 import com.distribuerp.mobile.models.LoginRequest
 import com.distribuerp.mobile.models.LoginResponse
 import com.distribuerp.mobile.models.MensajeResponse
@@ -34,6 +37,7 @@ import com.distribuerp.mobile.models.VendedorResponse
 import com.distribuerp.mobile.models.VendedoresResponse
 import com.distribuerp.mobile.models.VentaRequest
 import com.distribuerp.mobile.models.VentaResponse
+import com.distribuerp.mobile.models.VerificarResponse
 import com.distribuerp.mobile.models.VersionResponse
 import okhttp3.ResponseBody
 import retrofit2.Call
@@ -52,6 +56,23 @@ interface ApiService {
 
     @GET("api/version")
     fun getVersion(): Call<VersionResponse>
+
+    @POST("api/licencias/activar")
+    suspend fun activarLicencia(
+        @Body datos: ActivarRequest
+    ): LicenciaResponse
+
+    @GET("api/licencias/verificar")
+    suspend fun verificarLicencia(
+        @Query("codigo") codigo: String,
+        @Query("android_id") androidId: String?,
+        @Query("version_app") versionApp: String?
+    ): VerificarResponse
+
+    @POST("api/demo")
+    suspend fun solicitarDemo(
+        @Body datos: DemoRequest
+    ): LicenciaResponse
 
     @POST("api/login")
     fun login(

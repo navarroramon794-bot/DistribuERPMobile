@@ -57,8 +57,7 @@ object RetrofitClient {
                 val ruta = request.url().encodedPath()
 
                 if (response.code() == 302 ||
-                    response.code() == 401 ||
-                    response.code() == 403
+                    response.code() == 401
                 ) {
                     if (ruta.startsWith("/api/") &&
                         ruta != "/api/login"

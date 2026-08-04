@@ -53,6 +53,7 @@ import com.distribuerp.mobile.viewmodel.CargaViewModel
 @Composable
 fun CargasScreen(
     viewModel: CargaViewModel,
+    esAdministrador: Boolean,
     onAbrirMenu: () -> Unit,
     onNuevaCarga: () -> Unit,
     onVerDetalle: (Int) -> Unit
@@ -90,7 +91,7 @@ fun CargasScreen(
 
     LaunchedEffect(Unit) {
         viewModel.cargarCargas()
-        if (vendedores.isEmpty()) {
+        if (esAdministrador && vendedores.isEmpty()) {
             viewModel.cargarFormulario()
         }
     }
@@ -99,7 +100,13 @@ fun CargasScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Cargas")
+                    Text(
+                        if (esAdministrador) {
+                            "Cargas"
+                        } else {
+                            "Mis Cargas"
+                        }
+                    )
                 },
                 navigationIcon = {
 
@@ -117,20 +124,23 @@ fun CargasScreen(
         },
         floatingActionButton = {
 
-            ExtendedFloatingActionButton(
-                onClick = onNuevaCarga,
-                icon = {
+            if (esAdministrador) {
 
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = null
-                    )
-                },
-                text = {
+                ExtendedFloatingActionButton(
+                    onClick = onNuevaCarga,
+                    icon = {
 
-                    Text("Nueva Carga")
-                }
-            )
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = null
+                        )
+                    },
+                    text = {
+
+                        Text("Nueva Carga")
+                    }
+                )
+            }
         }
     ) { paddingValues ->
 
@@ -153,7 +163,7 @@ fun CargasScreen(
                 modifier = Modifier.height(12.dp)
             )
 
-            if (vendedores.isNotEmpty()) {
+            if (esAdministrador && vendedores.isNotEmpty()) {
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

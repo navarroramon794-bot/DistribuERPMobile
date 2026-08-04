@@ -2,7 +2,9 @@ package com.distribuerp.mobile.navigation
 
 import android.util.Log
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
@@ -49,12 +51,18 @@ import com.distribuerp.mobile.screens.ReportesScreen
 import com.distribuerp.mobile.screens.VendedorDetalleScreen
 import com.distribuerp.mobile.screens.VendedorFormScreen
 import com.distribuerp.mobile.screens.VendedoresScreen
+import com.distribuerp.mobile.screens.LicenciaScreen
+import com.distribuerp.mobile.ui.components.BannerDemo
+import com.distribuerp.mobile.ui.components.PantallaCargandoLicencia
+import com.distribuerp.mobile.data.Roles
 import com.distribuerp.mobile.viewmodel.AuthViewModel
 import com.distribuerp.mobile.viewmodel.CargaViewModel
 import com.distribuerp.mobile.viewmodel.ClienteViewModel
 import com.distribuerp.mobile.viewmodel.CobranzaViewModel
 import com.distribuerp.mobile.viewmodel.CompraViewModel
+import com.distribuerp.mobile.viewmodel.EstadoLicencia
 import com.distribuerp.mobile.viewmodel.InventarioViewModel
+import com.distribuerp.mobile.viewmodel.LicenciaViewModel
 import com.distribuerp.mobile.viewmodel.ProductoViewModel
 import com.distribuerp.mobile.viewmodel.ProveedorViewModel
 import com.distribuerp.mobile.viewmodel.VendedorViewModel
@@ -88,10 +96,27 @@ object Rutas {
     const val REPORTES = "reportes"
     const val REPORTE_FORM = "reportes/formulario?tipo={tipo}"
     const val CONFIGURACION = "configuracion"
+    const val LICENCIA = "licencia"
     const val IMPRESORA = "impresora"
     const val DIAGNOSTICO = "diagnostico"
     const val ACERCA_DE = "acerca_de"
     const val ACTUALIZACIONES = "actualizaciones"
+
+    val rutasSoloAdministrador = setOf(
+        PRODUCTOS,
+        PRODUCTO_DETALLE,
+        PRODUCTO_FORM,
+        VENDEDORES,
+        VENDEDOR_DETALLE,
+        VENDEDOR_FORM,
+        PROVEEDORES,
+        PROVEEDOR_DETALLE,
+        PROVEEDOR_FORM,
+        COMPRAS,
+        COMPRA_DETALLE,
+        NUEVA_COMPRA,
+        NUEVA_CARGA
+    )
 
     fun clienteDetalle(clienteId: Int): String =
         "clientes/$clienteId"
@@ -165,7 +190,14 @@ fun NavGraph() {
         viewModel(factory = ProveedorViewModel.Factory)
     val compraViewModel: CompraViewModel =
         viewModel(factory = CompraViewModel.Factory)
+    val licenciaViewModel: LicenciaViewModel =
+        viewModel(factory = LicenciaViewModel.Factory)
     val sesion by viewModel.sesion.collectAsState()
+
+    val estadoLicencia = licenciaViewModel.estado
+    val licenciaInfo = licenciaViewModel.licencia
+    val diasRestantesLicencia = licenciaViewModel.diasRestantes
+    val mensajeLicencia = licenciaViewModel.mensaje
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = backStackEntry?.destination?.route
@@ -173,7 +205,15 @@ fun NavGraph() {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(sesion, rutaActual) {
+    val accesoPermitido =
+        estadoLicencia == EstadoLicencia.Activa ||
+            estadoLicencia == EstadoLicencia.Demo
+
+    LaunchedEffect(sesion, rutaActual, accesoPermitido) {
+        if (!accesoPermitido) {
+            return@LaunchedEffect
+        }
+
         Log.d(
             "NAV",
             "sesion=${sesion != null} ruta=$rutaActual"
@@ -193,6 +233,17 @@ fun NavGraph() {
                     popUpTo(0) {
                         inclusive = true
                     }
+                }
+            }
+
+            sesion?.rol != Roles.ADMINISTRADOR &&
+                rutaActual in Rutas.rutasSoloAdministrador -> {
+
+                navController.navigate(Rutas.DASHBOARD) {
+                    popUpTo(Rutas.DASHBOARD) {
+                        inclusive = false
+                    }
+                    launchSingleTop = true
                 }
             }
         }
@@ -411,6 +462,12 @@ fun NavGraph() {
                 composable(Rutas.INVENTARIO) {
                     InventarioScreen(
                         viewModel = inventarioViewModel,
+                        vendedorIdPropio =
+                            if (sesion?.rol == Roles.VENDEDOR) {
+                                sesion?.vendedor_id?.toIntOrNull()
+                            } else {
+                                null
+                            },
                         onAbrirMenu = {
                             scope.launch {
                                 drawerState.open()
@@ -422,6 +479,8 @@ fun NavGraph() {
                 composable(Rutas.CARGAS) {
                     CargasScreen(
                         viewModel = cargaViewModel,
+                        esAdministrador =
+                            sesion?.rol == Roles.ADMINISTRADOR,
                         onAbrirMenu = {
                             scope.launch {
                                 drawerState.open()
@@ -675,6 +734,19 @@ fun NavGraph() {
                             navController.navigate(
                                 Rutas.ACTUALIZACIONES
                             )
+                        },
+                        onAbrirLicencia = {
+                            navController.navigate(Rutas.LICENCIA)
+                        }
+                    )
+                }
+
+                composable(Rutas.LICENCIA) {
+                    LicenciaScreen(
+                        licencia = licenciaInfo,
+                        diasRestantes = diasRestantesLicencia,
+                        onVolver = {
+                            navController.popBackStack()
                         }
                     )
                 }
@@ -771,6 +843,41 @@ fun NavGraph() {
         }
     }
 
+    if (!accesoPermitido) {
+
+        when (estadoLicencia) {
+
+            EstadoLicencia.Cargando ->
+                PantallaCargandoLicencia()
+
+            else ->
+                PuertaLicencia(
+                    viewModel = licenciaViewModel,
+                    estado = estadoLicencia,
+                    mensaje = mensajeLicencia
+                )
+        }
+
+    } else {
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+
+            if (estadoLicencia == EstadoLicencia.Demo) {
+
+                BannerDemo(
+                    diasRestantes = diasRestantesLicencia
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+
     if (esPantallaConDrawer) {
 
         ModalNavigationDrawer(
@@ -780,6 +887,7 @@ fun NavGraph() {
                 DrawerContenido(
                     nombreUsuario = sesion?.nombre ?: "",
                     correoUsuario = sesion?.correo ?: "",
+                    rol = sesion?.rol,
                     rutaActual = rutaActual,
                     onSeleccionar = { item ->
 
@@ -814,6 +922,9 @@ fun NavGraph() {
 
     } else {
 
-        contenidoNav()
+            contenidoNav()
+                }
+            }
+        }
     }
 }

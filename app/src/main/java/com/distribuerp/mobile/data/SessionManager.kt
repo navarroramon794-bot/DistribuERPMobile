@@ -18,6 +18,8 @@ class SessionManager(private val context: Context) {
         val NOMBRE = stringPreferencesKey("nombre")
         val CORREO = stringPreferencesKey("correo")
         val ROL = stringPreferencesKey("rol")
+        val VENDEDOR_ID = stringPreferencesKey("vendedor_id")
+        val VENDEDOR = stringPreferencesKey("vendedor")
     }
 
     val sesion: Flow<UsuarioGuardado?> =
@@ -32,7 +34,9 @@ class SessionManager(private val context: Context) {
                     id = id,
                     nombre = nombre,
                     correo = correo,
-                    rol = prefs[Keys.ROL]
+                    rol = prefs[Keys.ROL],
+                    vendedor_id = prefs[Keys.VENDEDOR_ID],
+                    vendedor = prefs[Keys.VENDEDOR]
                 )
             }
         }
@@ -43,6 +47,8 @@ class SessionManager(private val context: Context) {
             prefs[Keys.NOMBRE] = usuario.nombre
             prefs[Keys.CORREO] = usuario.correo
             prefs[Keys.ROL] = usuario.rol ?: ""
+            prefs[Keys.VENDEDOR_ID] = usuario.vendedor_id ?: ""
+            prefs[Keys.VENDEDOR] = usuario.vendedor ?: ""
         }
     }
 
@@ -57,5 +63,7 @@ data class UsuarioGuardado(
     val id: String,
     val nombre: String,
     val correo: String,
-    val rol: String?
+    val rol: String?,
+    val vendedor_id: String? = null,
+    val vendedor: String? = null
 )
