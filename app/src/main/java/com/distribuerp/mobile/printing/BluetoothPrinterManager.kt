@@ -42,10 +42,41 @@ object BluetoothPrinterManager {
         }
 
         return adaptador.bondedDevices
-            ?.filter { it.type != BluetoothDevice.DEVICE_TYPE_LE }
             ?.sortedBy { it.name }
             ?: emptyList()
     }
+
+    fun diagnosticarDispositivos(): List<DispositivoDiagnostico> =
+        dispositivosEmparejados().map { dispositivo ->
+            DispositivoDiagnostico(
+                nombre = dispositivo.name.ifBlank { "Sin nombre" },
+                mac = dispositivo.address,
+                tipo = nombreTipo(dispositivo),
+                vinculo = nombreVinculo(dispositivo)
+            )
+        }
+
+    fun nombreTipo(dispositivo: BluetoothDevice): String =
+        when (dispositivo.type) {
+            BluetoothDevice.DEVICE_TYPE_CLASSIC ->
+                "Clásico (BR/EDR)"
+
+            BluetoothDevice.DEVICE_TYPE_LE ->
+                "LE (baja energía)"
+
+            BluetoothDevice.DEVICE_TYPE_DUAL ->
+                "Doble modo (BR/EDR + LE)"
+
+            else -> "Desconocido"
+        }
+
+    fun nombreVinculo(dispositivo: BluetoothDevice): String =
+        when (dispositivo.bondState) {
+            BluetoothDevice.BOND_BONDED -> "Emparejado"
+            BluetoothDevice.BOND_BONDING -> "Emparejando..."
+            BluetoothDevice.BOND_NONE -> "Sin emparejar"
+            else -> "Desconocido"
+        }
 
     suspend fun conectar(dispositivo: BluetoothDevice): Boolean =
         withContext(Dispatchers.IO) {
@@ -144,3 +175,10 @@ object BluetoothPrinterManager {
         return metodo.invoke(dispositivo, 1) as BluetoothSocket
     }
 }
+
+data class DispositivoDiagnostico(
+    val nombre: String,
+    val mac: String,
+    val tipo: String,
+    val vinculo: String
+)

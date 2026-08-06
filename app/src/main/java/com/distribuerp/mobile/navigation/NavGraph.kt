@@ -3,8 +3,11 @@ package com.distribuerp.mobile.navigation
 import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
@@ -209,7 +212,7 @@ fun NavGraph() {
         estadoLicencia == EstadoLicencia.Activa ||
             estadoLicencia == EstadoLicencia.Demo
 
-    LaunchedEffect(sesion, rutaActual, accesoPermitido) {
+LaunchedEffect(sesion, rutaActual, accesoPermitido) {
         if (!accesoPermitido) {
             return@LaunchedEffect
         }
@@ -876,6 +879,15 @@ fun NavGraph() {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .then(
+                        if (estadoLicencia == EstadoLicencia.Demo) {
+                            Modifier.consumeWindowInsets(
+                                WindowInsets.statusBars
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
             ) {
 
     if (esPantallaConDrawer) {

@@ -1,6 +1,11 @@
 package com.distribuerp.mobile.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -42,10 +47,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.distribuerp.mobile.BuildConfig
 import com.distribuerp.mobile.api.RetrofitClient
 import com.distribuerp.mobile.models.PingResponse
 import com.distribuerp.mobile.printing.BluetoothPrinterManager
+import com.distribuerp.mobile.printing.DispositivoDiagnostico
 import com.distribuerp.mobile.printing.PrinterRepository
 import com.distribuerp.mobile.repository.mensajeAmigable
 import com.distribuerp.mobile.ui.components.FilaInformacion
@@ -74,6 +81,46 @@ fun DiagnosticoScreen(
     }
     var comprobando by remember {
         mutableStateOf(false)
+    }
+
+    var dispositivos by remember {
+        mutableStateOf<List<DispositivoDiagnostico>>(emptyList())
+    }
+    var bluetoothError by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    val launcherPermisoBluetooth =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { concedido ->
+            if (concedido) {
+                bluetoothError = null
+                dispositivos =
+                    BluetoothPrinterManager.diagnosticarDispositivos()
+            } else {
+                bluetoothError =
+                    "Permiso Bluetooth denegado"
+            }
+        }
+
+    fun cargarDispositivosBluetooth() {
+        val necesitaPermiso =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                ContextCompat.checkSelfPermission(
+                    contexto,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) != PackageManager.PERMISSION_GRANTED
+
+        if (necesitaPermiso) {
+            launcherPermisoBluetooth.launch(
+                Manifest.permission.BLUETOOTH_CONNECT
+            )
+        } else {
+            bluetoothError = null
+            dispositivos =
+                BluetoothPrinterManager.diagnosticarDispositivos()
+        }
     }
 
     fun comprobarServidor() {
@@ -115,6 +162,7 @@ fun DiagnosticoScreen(
 
     LaunchedEffect(Unit) {
         comprobarServidor()
+        cargarDispositivosBluetooth()
     }
 
     val impresoraNombre = configuracion?.nombre
@@ -267,6 +315,126 @@ fun DiagnosticoScreen(
                         etiqueta = "Dirección",
                         valor = configuracion?.mac ?: "—"
                     )
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+
+                    Text(
+                        text = "Bluetooth emparejado",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    FilaInformacion(
+                        icono = if (BluetoothPrinterManager.bluetoothActivado()) {
+                            Icons.Filled.Bluetooth
+                        } else {
+                            Icons.AutoMirrored.Filled.BluetoothSearching
+                        },
+                        etiqueta = "Bluetooth",
+                        valor = if (BluetoothPrinterManager.bluetoothActivado()) {
+                            "Activado"
+                        } else {
+                            "Apagado"
+                        }
+                    )
+
+                    if (bluetoothError != null) {
+
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
+
+                        Text(
+                            text = bluetoothError.orEmpty(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
+
+                        Button(
+                            onClick = {
+                                cargarDispositivosBluetooth()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = null
+                            )
+
+                            Spacer(
+                                modifier = Modifier.size(8.dp)
+                            )
+
+                            Text("Conceder permiso")
+                        }
+
+                    } else if (dispositivos.isEmpty()) {
+
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
+
+                        Text(
+                            text = "No hay dispositivos emparejados",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color =
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                    } else {
+
+                        dispositivos.forEach { dispositivo ->
+
+                            Spacer(
+                                modifier = Modifier.height(12.dp)
+                            )
+
+                            Text(
+                                text = dispositivo.nombre,
+                                style =
+                                    MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            FilaInformacion(
+                                icono = Icons.Filled.Bluetooth,
+                                etiqueta = "Dirección",
+                                valor = dispositivo.mac
+                            )
+
+                            FilaInformacion(
+                                icono = Icons.Filled.Info,
+                                etiqueta = "Tipo",
+                                valor = dispositivo.tipo
+                            )
+
+                            FilaInformacion(
+                                icono = Icons.Filled.CheckCircle,
+                                etiqueta = "Vinculo",
+                                valor = dispositivo.vinculo
+                            )
+                        }
+                    }
                 }
             }
 
