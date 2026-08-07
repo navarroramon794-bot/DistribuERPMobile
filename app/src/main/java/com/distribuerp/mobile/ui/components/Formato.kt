@@ -8,13 +8,5 @@ fun formatearDinero(valor: Double): String =
 fun formatearCantidad(valor: Double): String =
     String.format(Locale.US, "%,.2f", valor)
 
-fun formatearNumero(valor: Double): String {
-
-    val entero = valor.toInt()
-
-    return if (valor == entero.toDouble()) {
-        entero.toString()
-    } else {
-        valor.toString()
-    }
-}
+fun formatearNumero(valor: Double): String =
+    formatearCantidad(valor)

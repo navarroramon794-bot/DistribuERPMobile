@@ -83,7 +83,9 @@ fun ProductosScreen(
                 ) || producto.codigo.contains(
                     busqueda,
                     ignoreCase = true
-                )
+                ) || (producto.codigo_barras
+                    ?.contains(busqueda, ignoreCase = true)
+                    ?: false)
             }
         }
     }
@@ -158,7 +160,7 @@ fun ProductosScreen(
                 onCambio = {
                     busqueda = it
                 },
-                placeholder = "Buscar por nombre o código"
+                placeholder = "Buscar por nombre, código o barras"
             )
 
             Spacer(
@@ -265,6 +267,19 @@ private fun TarjetaProducto(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    producto.codigo_barras?.let { barras ->
+
+                        Spacer(
+                            modifier = Modifier.height(2.dp)
+                        )
+
+                        Text(
+                            text = "Barras: $barras",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 if (!producto.activo) {

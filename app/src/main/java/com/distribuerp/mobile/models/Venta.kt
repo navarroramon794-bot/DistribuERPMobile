@@ -15,6 +15,7 @@ data class ItemVenta(
     val producto_id: Int,
     val producto: String,
     val cantidad: Double,
+    val unidad: String = "",
     val precio: Double,
     val subtotal: Double
 )

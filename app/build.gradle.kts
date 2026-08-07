@@ -1,5 +1,7 @@
 import groovy.json.JsonSlurper
 import java.io.File
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -9,6 +11,12 @@ plugins {
 val versionJsonPath = providers.gradleProperty("versionJsonPath").getOrElse("C:/Distribu-erp/version.json")
 
 val apiUrlProp: String? = providers.gradleProperty("apiUrl").getOrNull()
+
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties()
+if (keystorePropsFile.exists()) {
+    FileInputStream(keystorePropsFile).use { keystoreProps.load(it) }
+}
 
 fun loadVersionInfo(): Pair<Int, String> {
     val archivo = File(versionJsonPath)
@@ -64,6 +72,17 @@ android {
                 "\"${apiUrlProp ?: "https://distribu-erp.onrender.com/"}\""
             )
 
+            if (keystoreProps.containsKey("storeFile")) {
+                signingConfig = signingConfigs.create("release") {
+                    storeFile = rootProject.file(
+                        keystoreProps.getProperty("storeFile")
+                    )
+                    storePassword = keystoreProps.getProperty("storePassword")
+                    keyAlias = keystoreProps.getProperty("keyAlias")
+                    keyPassword = keystoreProps.getProperty("keyPassword")
+                }
+            }
+
             optimization {
                 enable = false
             }
@@ -96,6 +115,7 @@ dependencies {
 
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation(libs.zxing.android.embedded)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

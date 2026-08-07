@@ -83,11 +83,18 @@ object EscPosBuilder {
         return izq + " ".repeat(relleno) + der
     }
 
-    fun item(nombre: String, cantidad: Double, precio: Double, subtotal: Double): ByteArray {
+    fun item(
+        nombre: String,
+        cantidad: Double,
+        precio: Double,
+        subtotal: Double,
+        unidad: String = ""
+    ): ByteArray {
         val salida = ByteArrayOutputStream()
         val cant = formatearCantidad(cantidad)
+        val sufijoUnidad = if (unidad.isBlank()) "" else " $unidad"
         val sub = formatearDinero(subtotal)
-        val prefijo = "$cant x "
+        val prefijo = "$cant$sufijoUnidad x "
         val espacioNombre = ANCHO - prefijo.length - sub.length
         val nombreCortado = recortar(nombre, espacioNombre)
         salida.write(texto(columna(prefijo + nombreCortado, sub)))
@@ -151,7 +158,8 @@ object EscPosBuilder {
                     nombre = itemVenta.producto,
                     cantidad = itemVenta.cantidad,
                     precio = itemVenta.precio,
-                    subtotal = itemVenta.subtotal
+                    subtotal = itemVenta.subtotal,
+                    unidad = itemVenta.unidad
                 )
             )
         }
@@ -236,7 +244,8 @@ object EscPosBuilder {
         s.write(texto(columna("CANT PRODUCTO", "CANTIDAD"), negritas = true))
         carga.items.forEach { itemCarga ->
             val cant = formatearCantidad(itemCarga.cantidad)
-            val prefijo = "$cant x "
+            val sufijoUnidad = if (itemCarga.unidad.isBlank()) "" else " ${itemCarga.unidad}"
+            val prefijo = "$cant$sufijoUnidad x "
             val espacioNombre = ANCHO - prefijo.length - cant.length
             val nombreCortado = recortar(itemCarga.producto, espacioNombre)
             s.write(texto(columna(prefijo + nombreCortado, cant)))
@@ -286,7 +295,8 @@ object EscPosBuilder {
                     nombre = itemCompra.producto,
                     cantidad = itemCompra.cantidad,
                     precio = itemCompra.precio,
-                    subtotal = itemCompra.subtotal
+                    subtotal = itemCompra.subtotal,
+                    unidad = itemCompra.unidad
                 )
             )
         }

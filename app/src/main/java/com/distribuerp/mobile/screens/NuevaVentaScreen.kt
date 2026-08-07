@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
 import com.distribuerp.mobile.models.Producto
 import com.distribuerp.mobile.models.Vendedor
 import com.distribuerp.mobile.printing.PrinterRepository
@@ -63,6 +64,9 @@ import com.distribuerp.mobile.ui.components.SelectorDesplegable
 import com.distribuerp.mobile.ui.components.formatearDinero
 import com.distribuerp.mobile.viewmodel.ItemTicket
 import com.distribuerp.mobile.viewmodel.VentaViewModel
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanIntentResult
+import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,6 +108,45 @@ fun NuevaVentaScreen(
         mutableStateOf("")
     }
 
+    val escanearLauncher = rememberLauncherForActivityResult(
+        contract = ScanContract()
+    ) { resultado: ScanIntentResult ->
+
+        val contenido = resultado.contents
+
+        if (!contenido.isNullOrBlank()) {
+
+            val producto = productos.firstOrNull {
+                it.codigo_barras == contenido
+            }
+
+            if (producto != null) {
+
+                viewModel.agregarProducto(producto)
+                viewModel.mostrarMensaje(
+                    "Producto agregado: ${producto.nombre}"
+                )
+
+            } else {
+
+                viewModel.mostrarMensaje(
+                    "No se encontró un producto con el código " +
+                        contenido
+                )
+            }
+        }
+    }
+
+    fun iniciarEscaneo() {
+
+        val opciones = ScanOptions()
+            .setPrompt("Apunta la cámara al código de barras")
+            .setBeepEnabled(true)
+            .setOrientationLocked(false)
+
+        escanearLauncher.launch(opciones)
+    }
+
     LaunchedEffect(ventaExitosa) {
         imprimiendo = false
         errorImpresion = null
@@ -126,7 +169,9 @@ fun NuevaVentaScreen(
                 ) || producto.codigo.contains(
                     busqueda,
                     ignoreCase = true
-                )
+                ) || (producto.codigo_barras
+                    ?.contains(busqueda, ignoreCase = true)
+                    ?: false)
             }
         }
     }
@@ -286,15 +331,48 @@ fun NuevaVentaScreen(
 
                     item {
 
-                        BarraBusqueda(
-                            valor = busqueda,
-                            onCambio = {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            verticalAlignment =
+                                Alignment.CenterVertically,
+                            horizontalArrangement =
+                                Arrangement.spacedBy(8.dp)
+                        ) {
 
-                                busqueda = it
-                            },
-                            placeholder =
-                                "Buscar producto por nombre o código"
-                        )
+                            Box(
+                                modifier = Modifier.weight(1f)
+                            ) {
+
+                                BarraBusqueda(
+                                    valor = busqueda,
+                                    onCambio = {
+
+                                        busqueda = it
+                                    },
+                                    placeholder =
+                                        "Buscar por nombre, código o barras"
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    iniciarEscaneo()
+                                }
+                            ) {
+
+                                Icon(
+                                    imageVector = Icons.Filled.Search,
+                                    contentDescription = null
+                                )
+
+                                Spacer(
+                                    modifier = Modifier.width(4.dp)
+                                )
+
+                                Text("Escanear")
+                            }
+                        }
                     }
 
                     if (filtrados.isEmpty()) {
@@ -734,6 +812,12 @@ private fun TarjetaItemVenta(
                         contentDescription = "Aumentar"
                     )
                 }
+
+                Text(
+                    text = item.producto.unidad_venta,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 Spacer(
                     modifier = Modifier.weight(1f)

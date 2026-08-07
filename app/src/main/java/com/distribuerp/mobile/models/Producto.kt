@@ -8,6 +8,9 @@ data class Producto(
     val costo: Double,
     val precio: Double,
     val existencia: Double,
+    val codigo_barras: String? = null,
+    val tipo_codigo: String? = null,
+    val unidad_venta: String = "kg",
     val activo: Boolean,
     val fecha_creacion: String?
 )
@@ -28,5 +31,8 @@ data class ProductoRequest(
     val nombre: String,
     val descripcion: String?,
     val precio: Double,
-    val existencia: Double
+    val existencia: Double,
+    val codigo_barras: String? = null,
+    val tipo_codigo: String? = null,
+    val unidad_venta: String = "kg"
 )

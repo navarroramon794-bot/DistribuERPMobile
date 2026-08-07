@@ -414,7 +414,11 @@ private fun TarjetaItemCompraDetalle(
             ) {
 
                 Text(
-                    text = formatearCantidad(detalle.cantidad),
+                    text = if (detalle.unidad.isBlank()) {
+                        formatearCantidad(detalle.cantidad)
+                    } else {
+                        formatearCantidad(detalle.cantidad) + " " + detalle.unidad
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

@@ -11,3 +11,8 @@
 local.properties
 **/build/
 /distribuibles/
+
+# Credenciales de firma (no versionar)
+keystore.properties
+app/keystore/*.keystore
+app/keystore/*.jks

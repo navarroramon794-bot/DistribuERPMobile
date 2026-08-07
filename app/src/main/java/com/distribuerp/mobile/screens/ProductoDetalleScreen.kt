@@ -402,6 +402,20 @@ private fun TarjetaInformacionProducto(
 
             FilaInformacion(
                 icono = Icons.Filled.Inventory2,
+                etiqueta = "Código de Barras",
+                valor = producto.codigo_barras?.ifBlank {
+                    null
+                } ?: "—"
+            )
+
+            FilaInformacion(
+                icono = Icons.Filled.Inventory2,
+                etiqueta = "Tipo de Código",
+                valor = producto.tipo_codigo ?: "EAN-13"
+            )
+
+            FilaInformacion(
+                icono = Icons.Filled.Inventory2,
                 etiqueta = "Nombre",
                 valor = producto.nombre
             )

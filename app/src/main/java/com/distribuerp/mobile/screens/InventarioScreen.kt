@@ -86,6 +86,15 @@ fun InventarioScreen(
         }
     }
 
+    val resumen = remember(inventario) {
+
+        Triple(
+            inventario.sumOf { it.cargado },
+            inventario.sumOf { it.vendido },
+            inventario.sumOf { it.disponible }
+        )
+    }
+
     LaunchedEffect(vendedorIdPropio) {
         val propio = vendedorIdPropio
 
@@ -167,6 +176,19 @@ fun InventarioScreen(
                 },
                 placeholder = "Buscar por nombre o código"
             )
+
+            if (inventario.isNotEmpty()) {
+
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
+
+                ResumenInventario(
+                    asignado = resumen.first,
+                    vendido = resumen.second,
+                    disponible = resumen.third
+                )
+            }
 
             mensaje?.let { texto ->
 
@@ -276,6 +298,85 @@ fun InventarioScreen(
 }
 
 @Composable
+private fun ResumenInventario(
+    asignado: Double,
+    vendido: Double,
+    disponible: Double
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+
+            Text(
+                text = "Resumen de inventario",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                DatoResumen(
+                    titulo = "Asignado",
+                    valor = formatearNumero(asignado),
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                DatoResumen(
+                    titulo = "Vendido",
+                    valor = formatearNumero(vendido),
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+
+                DatoResumen(
+                    titulo = "Disponible",
+                    valor = formatearNumero(disponible),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DatoResumen(
+    titulo: String,
+    valor: String,
+    color: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Text(
+            text = titulo,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Text(
+            text = valor,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+    }
+}
+
+@Composable
 private fun TarjetaItemInventario(
     item: ItemInventario
 ) {
@@ -337,6 +438,7 @@ private fun TarjetaItemInventario(
                 DatoCantidad(
                     etiqueta = "Disponible",
                     valor = formatearNumero(item.disponible),
+                    unidad = item.unidad_venta,
                     color =
                         if (item.disponible > 0) {
                             MaterialTheme.colorScheme.primary
@@ -347,12 +449,14 @@ private fun TarjetaItemInventario(
 
                 DatoCantidad(
                     etiqueta = "Cargado",
-                    valor = formatearNumero(item.cargado)
+                    valor = formatearNumero(item.cargado),
+                    unidad = item.unidad_venta
                 )
 
                 DatoCantidad(
                     etiqueta = "Vendido",
-                    valor = formatearNumero(item.vendido)
+                    valor = formatearNumero(item.vendido),
+                    unidad = item.unidad_venta
                 )
             }
         }
@@ -363,6 +467,7 @@ private fun TarjetaItemInventario(
 private fun DatoCantidad(
     etiqueta: String,
     valor: String,
+    unidad: String = "",
     color: Color =
         MaterialTheme.colorScheme.onSurface
 ) {
@@ -379,7 +484,7 @@ private fun DatoCantidad(
         )
 
         Text(
-            text = valor,
+            text = if (unidad.isBlank()) valor else "$valor $unidad",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = color
@@ -387,13 +492,5 @@ private fun DatoCantidad(
     }
 }
 
-private fun formatearNumero(valor: Double): String {
-
-    val entero = valor.toInt()
-
-    return if (valor == entero.toDouble()) {
-        entero.toString()
-    } else {
-        valor.toString()
-    }
-}
+private fun formatearNumero(valor: Double): String =
+    String.format(java.util.Locale.US, "%,.2f", valor)

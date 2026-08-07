@@ -95,7 +95,11 @@ fun ClienteFormScreen(
             direccion = cliente.direccion ?: ""
             telefono = cliente.telefono ?: ""
             limiteCredito = if (cliente.limite_credito > 0) {
-                cliente.limite_credito.toString()
+                java.lang.String.format(
+                    java.util.Locale.US,
+                    "%.2f",
+                    cliente.limite_credito
+                )
             } else {
                 ""
             }

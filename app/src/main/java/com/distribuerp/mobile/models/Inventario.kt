@@ -5,6 +5,7 @@ data class ItemInventario(
     val codigo: String,
     val nombre: String,
     val precio: Double,
+    val unidad_venta: String = "kg",
     val cargado: Double,
     val vendido: Double,
     val disponible: Double

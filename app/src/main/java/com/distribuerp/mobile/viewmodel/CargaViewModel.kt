@@ -1,4 +1,6 @@
-package com.distribuerp.mobile.viewmodel
+﻿package com.distribuerp.mobile.viewmodel
+
+import java.util.Locale
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -159,13 +161,11 @@ class CargaViewModel(
         }
 
         if (existente != null) {
-            val nueva = (existente.cantidad() + 1).let {
-                if (it == it.toInt().toDouble()) {
-                    it.toInt().toString()
-                } else {
-                    it.toString()
-                }
-            }
+            val nueva = String.format(
+                Locale.US,
+                "%.2f",
+                existente.cantidad() + 1
+            )
 
             val indice = items.indexOf(existente)
             items[indice] = existente.copy(
@@ -311,3 +311,4 @@ class CargaViewModel(
 private fun ItemCargaTicket.cantidad(): Double {
     return cantidadTexto.toDoubleOrNull() ?: 0.0
 }
+

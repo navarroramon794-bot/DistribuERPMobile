@@ -142,14 +142,11 @@ class VentaViewModel(
         val existente = items.firstOrNull { it.producto.id == producto.id }
 
         if (existente != null) {
-            val nueva = (existente.cantidad() + 1).let {
-
-                if (it == it.toInt().toDouble()) {
-                    it.toInt().toString()
-                } else {
-                    it.toString()
-                }
-            }
+            val nueva = java.lang.String.format(
+                java.util.Locale.US,
+                "%.2f",
+                existente.cantidad() + 1
+            )
 
             val indice = items.indexOf(existente)
             items[indice] = existente.copy(cantidadTexto = nueva)
@@ -253,6 +250,11 @@ class VentaViewModel(
 
     fun limpiarMensaje() {
         mensaje = null
+    }
+
+    fun mostrarMensaje(texto: String) {
+        error = null
+        mensaje = texto
     }
 
     fun limpiarError() {

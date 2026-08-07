@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.distribuerp.mobile.models.ProductoRequest
 import com.distribuerp.mobile.ui.components.AvisoMensaje
 import com.distribuerp.mobile.ui.components.LoadingContent
+import com.distribuerp.mobile.ui.components.SelectorDesplegable
 import com.distribuerp.mobile.viewmodel.ProductoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +75,24 @@ fun ProductoFormScreen(
         mutableStateOf("")
     }
 
+    var codigoBarras by remember {
+        mutableStateOf("")
+    }
+
+    var tipoCodigo by remember {
+        mutableStateOf("EAN-13")
+    }
+
+    val unidadesVenta = listOf(
+        "kg", "g", "pza", "caja", "paquete", "bolsa",
+        "costal", "litro", "ml", "botella", "cubeta",
+        "charola", "otro"
+    )
+
+    var unidadVenta by remember {
+        mutableStateOf("kg")
+    }
+
     LaunchedEffect(productoId) {
 
         if (
@@ -99,15 +118,26 @@ fun ProductoFormScreen(
             nombre = producto.nombre
             descripcion = producto.descripcion ?: ""
             precio = if (producto.precio > 0) {
-                producto.precio.toString()
+                java.lang.String.format(
+                    java.util.Locale.US,
+                    "%.2f",
+                    producto.precio
+                )
             } else {
                 ""
             }
             existencia = if (producto.existencia > 0) {
-                producto.existencia.toString()
+                java.lang.String.format(
+                    java.util.Locale.US,
+                    "%.2f",
+                    producto.existencia
+                )
             } else {
                 ""
             }
+            codigoBarras = producto.codigo_barras ?: ""
+            tipoCodigo = producto.tipo_codigo ?: "EAN-13"
+            unidadVenta = producto.unidad_venta.ifBlank { "kg" }
             yaPrefill = true
         }
     }
@@ -126,7 +156,12 @@ fun ProductoFormScreen(
                 null
             },
             precio = precio.toDoubleOrNull() ?: 0.0,
-            existencia = existencia.toDoubleOrNull() ?: 0.0
+            existencia = existencia.toDoubleOrNull() ?: 0.0,
+            codigo_barras = codigoBarras.trim().ifEmpty {
+                null
+            },
+            tipo_codigo = tipoCodigo,
+            unidad_venta = unidadVenta
         )
 
         viewModel.guardarProducto(
@@ -263,6 +298,53 @@ fun ProductoFormScreen(
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Decimal
                         )
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(16.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = codigoBarras,
+                        onValueChange = {
+                            codigoBarras = it
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = {
+                            Text("Código de Barras (opcional)")
+                        },
+                        placeholder = {
+                            Text("EAN-13")
+                        },
+                        singleLine = true
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(16.dp)
+                    )
+
+                    SelectorDesplegable(
+                        etiqueta = "Tipo de Código",
+                        seleccionado = tipoCodigo,
+                        opciones = listOf("EAN-13"),
+                        textoDe = { it },
+                        onSeleccionar = {
+                            tipoCodigo = it
+                        }
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(16.dp)
+                    )
+
+                    SelectorDesplegable(
+                        etiqueta = "Unidad de Venta",
+                        seleccionado = unidadVenta,
+                        opciones = unidadesVenta,
+                        textoDe = { it },
+                        onSeleccionar = {
+                            unidadVenta = it
+                        }
                     )
 
                     mensaje?.let { texto ->
