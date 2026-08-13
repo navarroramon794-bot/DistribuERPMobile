@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.distribuerp.mobile.models.Carga
+import com.distribuerp.mobile.models.EmpresaDatos
 import com.distribuerp.mobile.models.ItemCarga
 import com.distribuerp.mobile.printing.PrinterRepository
 import com.distribuerp.mobile.ui.components.ErrorContent
@@ -59,6 +60,7 @@ import kotlinx.coroutines.launch
 fun CargaDetalleScreen(
     cargaId: Int,
     viewModel: CargaViewModel,
+    empresa: EmpresaDatos? = null,
     onVolver: () -> Unit
 ) {
     val cargando = viewModel.cargandoDetalle
@@ -212,7 +214,10 @@ fun CargaDetalleScreen(
 
                                     val resultado =
                                         impresoraRepositorio
-                                            .imprimirComprobanteCarga(carga)
+                                            .imprimirComprobanteCarga(
+                                                carga,
+                                                empresa
+                                            )
                                     imprimiendo = false
 
                                     if (!resultado.ok) {

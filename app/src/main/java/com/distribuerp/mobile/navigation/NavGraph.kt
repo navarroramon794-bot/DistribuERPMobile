@@ -196,6 +196,7 @@ fun NavGraph() {
     val licenciaViewModel: LicenciaViewModel =
         viewModel(factory = LicenciaViewModel.Factory)
     val sesion by viewModel.sesion.collectAsState()
+    val empresa = viewModel.empresa
 
     val estadoLicencia = licenciaViewModel.estado
     val licenciaInfo = licenciaViewModel.licencia
@@ -503,6 +504,7 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
                 composable(Rutas.NUEVA_CARGA) {
                     NuevaCargaScreen(
                         viewModel = cargaViewModel,
+                        empresa = empresa,
                         onVolver = {
                             navController.popBackStack()
                         }
@@ -524,6 +526,7 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
                     CargaDetalleScreen(
                         cargaId = cargaId,
                         viewModel = cargaViewModel,
+                        empresa = empresa,
                         onVolver = {
                             navController.popBackStack()
                         }
@@ -629,6 +632,7 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
                 composable(Rutas.NUEVA_COMPRA) {
                     NuevaCompraScreen(
                         viewModel = compraViewModel,
+                        empresa = empresa,
                         onVolver = {
                             navController.popBackStack()
                         }
@@ -650,6 +654,7 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
                     CompraDetalleScreen(
                         compraId = compraId,
                         viewModel = compraViewModel,
+                        empresa = empresa,
                         onVolver = {
                             navController.popBackStack()
                         }
@@ -659,6 +664,7 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
                 composable(Rutas.NUEVA_VENTA) {
                     NuevaVentaScreen(
                         viewModel = ventaViewModel,
+                        empresa = empresa,
                         onAbrirMenu = {
                             scope.launch {
                                 drawerState.open()
@@ -673,6 +679,7 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
                 composable(Rutas.COBRANZA) {
                     CobranzaScreen(
                         viewModel = cobranzaViewModel,
+                        empresa = empresa,
                         onAbrirMenu = {
                             scope.launch {
                                 drawerState.open()
@@ -756,6 +763,7 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
 
                 composable(Rutas.IMPRESORA) {
                     ImpresoraScreen(
+                        empresa = empresa,
                         onAbrirMenu = {
                             scope.launch {
                                 drawerState.open()

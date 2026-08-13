@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.rememberLauncherForActivityResult
+import com.distribuerp.mobile.models.EmpresaDatos
 import com.distribuerp.mobile.models.Producto
 import com.distribuerp.mobile.models.Vendedor
 import com.distribuerp.mobile.printing.PrinterRepository
@@ -73,6 +74,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun NuevaVentaScreen(
     viewModel: VentaViewModel,
+    empresa: EmpresaDatos? = null,
     onAbrirMenu: () -> Unit,
     onFinalizar: () -> Unit
 ) {
@@ -621,7 +623,10 @@ fun NuevaVentaScreen(
 
                                 val resultado =
                                     impresoraRepositorio
-                                        .imprimirTicketVenta(venta)
+                                        .imprimirTicketVenta(
+                                            venta,
+                                            empresa
+                                        )
                                 imprimiendo = false
 
                                 if (resultado.ok) {

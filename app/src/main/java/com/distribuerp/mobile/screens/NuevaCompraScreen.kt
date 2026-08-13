@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.distribuerp.mobile.models.EmpresaDatos
 import com.distribuerp.mobile.models.Producto
 import com.distribuerp.mobile.printing.PrinterRepository
 import com.distribuerp.mobile.ui.components.AvisoMensaje
@@ -68,6 +69,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun NuevaCompraScreen(
     viewModel: CompraViewModel,
+    empresa: EmpresaDatos? = null,
     onVolver: () -> Unit
 ) {
     val cargando = viewModel.cargando
@@ -533,7 +535,10 @@ fun NuevaCompraScreen(
 
                                 val resultado =
                                     impresoraRepositorio
-                                        .imprimirComprobanteCompra(compra)
+                                        .imprimirComprobanteCompra(
+                                            compra,
+                                            empresa
+                                        )
                                 imprimiendo = false
 
                                 if (resultado.ok) {

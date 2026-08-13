@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.distribuerp.mobile.models.EmpresaDatos
 import com.distribuerp.mobile.models.EstadoCuentaResponse
 import com.distribuerp.mobile.models.Venta
 import com.distribuerp.mobile.printing.PrinterRepository
@@ -69,6 +70,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CobranzaScreen(
     viewModel: CobranzaViewModel,
+    empresa: EmpresaDatos? = null,
     onAbrirMenu: () -> Unit
 ) {
     val cargandoClientes = viewModel.cargandoClientes
@@ -549,7 +551,8 @@ fun CobranzaScreen(
                                             venta = ventaSeleccionada,
                                             saldoRestante =
                                                 resultado
-                                                    .saldoRestante
+                                                    .saldoRestante,
+                                            empresa = empresa
                                         )
                                 imprimiendo = false
 

@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.distribuerp.mobile.models.EmpresaDatos
 import com.distribuerp.mobile.printing.BluetoothPrinterManager
 import com.distribuerp.mobile.printing.ConfiguracionImpresora
 import com.distribuerp.mobile.printing.PrinterRepository
@@ -65,6 +66,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImpresoraScreen(
+    empresa: EmpresaDatos? = null,
     onAbrirMenu: () -> Unit
 ) {
     val contexto = LocalContext.current
@@ -235,7 +237,7 @@ fun ImpresoraScreen(
                         scope.launch {
 
                             val resultado =
-                                repositorio.imprimirPrueba()
+                                repositorio.imprimirPrueba(empresa)
                             imprimiendoPrueba = false
                             mostrarResultado(resultado)
                         }

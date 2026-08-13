@@ -3,6 +3,7 @@ package com.distribuerp.mobile.printing
 import com.distribuerp.mobile.BuildConfig
 import com.distribuerp.mobile.models.Carga
 import com.distribuerp.mobile.models.Compra
+import com.distribuerp.mobile.models.EmpresaDatos
 import com.distribuerp.mobile.models.Pago
 import com.distribuerp.mobile.models.Venta
 import com.distribuerp.mobile.ui.components.formatearDinero
@@ -126,7 +127,10 @@ object EscPosBuilder {
         return texto.toByteArray(charset)
     }
 
-    fun ticketVenta(venta: Venta): ByteArray {
+    fun ticketVenta(
+        venta: Venta,
+        empresa: EmpresaDatos? = null
+    ): ByteArray {
         val s = ByteArrayOutputStream()
 
         s.write(init())
@@ -135,14 +139,27 @@ object EscPosBuilder {
         s.write(separador())
         s.write(
             texto(
-                linea = "DistribuERP",
+                linea = recortar(
+                    empresa?.nombre?.takeIf { it.isNotBlank() }
+                        ?: "DistribuERP",
+                    ANCHO
+                ),
                 alineacion = Alineacion.CENTRO,
                 negritas = true,
                 dobleAncho = true,
                 dobleAlto = true
             )
         )
-        s.write(texto("www.distribuerp.com", Alineacion.CENTRO))
+        s.write(
+            texto(
+                recortar(
+                    empresa?.sitio_web?.takeIf { it.isNotBlank() }
+                        ?: "www.distribuerp.com",
+                    ANCHO
+                ),
+                Alineacion.CENTRO
+            )
+        )
         s.write(lineaEnBlanco())
         s.write(texto("VENTA", Alineacion.CENTRO, negritas = true))
         s.write(lineaEnBlanco())
@@ -178,7 +195,12 @@ object EscPosBuilder {
         return s.toByteArray()
     }
 
-    fun ticketCobranza(pago: Pago, venta: Venta?, saldoRestante: Double): ByteArray {
+    fun ticketCobranza(
+        pago: Pago,
+        venta: Venta?,
+        saldoRestante: Double,
+        empresa: EmpresaDatos? = null
+    ): ByteArray {
 
         val s = ByteArrayOutputStream()
 
@@ -188,14 +210,27 @@ object EscPosBuilder {
         s.write(separador())
         s.write(
             texto(
-                linea = "DistribuERP",
+                linea = recortar(
+                    empresa?.nombre?.takeIf { it.isNotBlank() }
+                        ?: "DistribuERP",
+                    ANCHO
+                ),
                 alineacion = Alineacion.CENTRO,
                 negritas = true,
                 dobleAncho = true,
                 dobleAlto = true
             )
         )
-        s.write(texto("www.distribuerp.com", Alineacion.CENTRO))
+        s.write(
+            texto(
+                recortar(
+                    empresa?.sitio_web?.takeIf { it.isNotBlank() }
+                        ?: "www.distribuerp.com",
+                    ANCHO
+                ),
+                Alineacion.CENTRO
+            )
+        )
         s.write(lineaEnBlanco())
         s.write(texto("RECIBO DE PAGO", Alineacion.CENTRO, negritas = true))
         s.write(lineaEnBlanco())
@@ -217,7 +252,10 @@ object EscPosBuilder {
         return s.toByteArray()
     }
 
-    fun ticketCarga(carga: Carga): ByteArray {
+    fun ticketCarga(
+        carga: Carga,
+        empresa: EmpresaDatos? = null
+    ): ByteArray {
         val s = ByteArrayOutputStream()
 
         s.write(init())
@@ -226,14 +264,27 @@ object EscPosBuilder {
         s.write(separador())
         s.write(
             texto(
-                linea = "DistribuERP",
+                linea = recortar(
+                    empresa?.nombre?.takeIf { it.isNotBlank() }
+                        ?: "DistribuERP",
+                    ANCHO
+                ),
                 alineacion = Alineacion.CENTRO,
                 negritas = true,
                 dobleAncho = true,
                 dobleAlto = true
             )
         )
-        s.write(texto("www.distribuerp.com", Alineacion.CENTRO))
+        s.write(
+            texto(
+                recortar(
+                    empresa?.sitio_web?.takeIf { it.isNotBlank() }
+                        ?: "www.distribuerp.com",
+                    ANCHO
+                ),
+                Alineacion.CENTRO
+            )
+        )
         s.write(lineaEnBlanco())
         s.write(texto("COMPROBANTE DE CARGA", Alineacion.CENTRO, negritas = true))
         s.write(lineaEnBlanco())
@@ -264,7 +315,10 @@ object EscPosBuilder {
         return s.toByteArray()
     }
 
-    fun ticketCompra(compra: Compra): ByteArray {
+    fun ticketCompra(
+        compra: Compra,
+        empresa: EmpresaDatos? = null
+    ): ByteArray {
         val s = ByteArrayOutputStream()
 
         s.write(init())
@@ -273,14 +327,27 @@ object EscPosBuilder {
         s.write(separador())
         s.write(
             texto(
-                linea = "DistribuERP",
+                linea = recortar(
+                    empresa?.nombre?.takeIf { it.isNotBlank() }
+                        ?: "DistribuERP",
+                    ANCHO
+                ),
                 alineacion = Alineacion.CENTRO,
                 negritas = true,
                 dobleAncho = true,
                 dobleAlto = true
             )
         )
-        s.write(texto("www.distribuerp.com", Alineacion.CENTRO))
+        s.write(
+            texto(
+                recortar(
+                    empresa?.sitio_web?.takeIf { it.isNotBlank() }
+                        ?: "www.distribuerp.com",
+                    ANCHO
+                ),
+                Alineacion.CENTRO
+            )
+        )
         s.write(lineaEnBlanco())
         s.write(texto("COMPROBANTE DE COMPRA", Alineacion.CENTRO, negritas = true))
         s.write(lineaEnBlanco())
@@ -314,7 +381,10 @@ object EscPosBuilder {
         return s.toByteArray()
     }
 
-    fun ticketPrueba(nombreImpresora: String): ByteArray {
+    fun ticketPrueba(
+        nombreImpresora: String,
+        empresa: EmpresaDatos? = null
+    ): ByteArray {
 
         val s = ByteArrayOutputStream()
 
@@ -323,14 +393,27 @@ object EscPosBuilder {
         s.write(separador())
         s.write(
             texto(
-                linea = "DistribuERP",
+                linea = recortar(
+                    empresa?.nombre?.takeIf { it.isNotBlank() }
+                        ?: "DistribuERP",
+                    ANCHO
+                ),
                 alineacion = Alineacion.CENTRO,
                 negritas = true,
                 dobleAncho = true,
                 dobleAlto = true
             )
         )
-        s.write(texto("www.distribuerp.com", Alineacion.CENTRO))
+        s.write(
+            texto(
+                recortar(
+                    empresa?.sitio_web?.takeIf { it.isNotBlank() }
+                        ?: "www.distribuerp.com",
+                    ANCHO
+                ),
+                Alineacion.CENTRO
+            )
+        )
         s.write(lineaEnBlanco())
         s.write(texto("DIAGNÓSTICO", Alineacion.CENTRO, negritas = true))
         s.write(lineaEnBlanco())

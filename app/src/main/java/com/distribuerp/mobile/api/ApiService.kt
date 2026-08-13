@@ -1,5 +1,6 @@
 package com.distribuerp.mobile.api
 
+import com.distribuerp.mobile.models.EmpresaResponse
 import com.distribuerp.mobile.models.CargaRequest
 import com.distribuerp.mobile.models.CargaResponse
 import com.distribuerp.mobile.models.CargasResponse
@@ -50,6 +51,9 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
+
+    @GET("api/empresa")
+    fun getEmpresa(): Call<EmpresaResponse>
 
     @GET("api/ping")
     fun ping(): Call<PingResponse>

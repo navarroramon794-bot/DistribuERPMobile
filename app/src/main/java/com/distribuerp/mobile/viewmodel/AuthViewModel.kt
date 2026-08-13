@@ -14,6 +14,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.distribuerp.mobile.api.RetrofitClient
 import com.distribuerp.mobile.data.SessionManager
 import com.distribuerp.mobile.data.UsuarioGuardado
+import com.distribuerp.mobile.models.EmpresaDatos
+import com.distribuerp.mobile.models.EmpresaResponse
 import com.distribuerp.mobile.models.LoginRequest
 import com.distribuerp.mobile.models.LoginResponse
 import com.distribuerp.mobile.models.PingResponse
@@ -40,6 +42,9 @@ class AuthViewModel(
         private set
 
     var pingEstado by mutableStateOf("Servidor: Conectando...")
+        private set
+
+    var empresa by mutableStateOf<EmpresaDatos?>(null)
         private set
 
     val sesion =
@@ -99,6 +104,43 @@ class AuthViewModel(
             )
     }
 
+    private fun cargarEmpresa() {
+        RetrofitClient.api
+            .getEmpresa()
+            .enqueue(
+                object : Callback<EmpresaResponse> {
+
+                    override fun onResponse(
+                        call: Call<EmpresaResponse>,
+                        response: Response<EmpresaResponse>
+                    ) {
+                        val body = response.body()
+
+                        if (response.isSuccessful &&
+                            body != null &&
+                            body.ok
+                        ) {
+                            empresa = body.datos
+                        } else {
+                            empresa = null
+                            Log.w(
+                                "EMPRESA",
+                                "Respuesta inválida: HTTP ${response.code()}"
+                            )
+                        }
+                    }
+
+                    override fun onFailure(
+                        call: Call<EmpresaResponse>,
+                        t: Throwable
+                    ) {
+                        empresa = null
+                        Log.e("EMPRESA", "Error al cargar empresa", t)
+                    }
+                }
+            )
+    }
+
     fun login(correo: String, password: String) {
         if (loginUiState.enviando) return
 
@@ -143,6 +185,7 @@ class AuthViewModel(
                                                 vendedor = usuario.vendedor
                                             )
                                         )
+                                        cargarEmpresa()
                                         loginUiState = loginUiState.copy(
                                             enviando = false,
                                             mensaje = "Bienvenido ${usuario.nombre}"
@@ -219,6 +262,7 @@ class AuthViewModel(
         viewModelScope.launch {
             RetrofitClient.limpiarCookies()
             sessionManager.cerrarSesion()
+            empresa = null
         }
     }
 

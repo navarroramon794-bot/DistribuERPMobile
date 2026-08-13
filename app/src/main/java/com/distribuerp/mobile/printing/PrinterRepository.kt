@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.distribuerp.mobile.models.Carga
 import com.distribuerp.mobile.models.Compra
+import com.distribuerp.mobile.models.EmpresaDatos
 import com.distribuerp.mobile.models.Pago
 import com.distribuerp.mobile.models.Venta
 import kotlinx.coroutines.flow.Flow
@@ -94,14 +95,17 @@ class PrinterRepository(private val context: Context) {
         )
     }
 
-    suspend fun imprimirTicketVenta(venta: Venta): ResultadoImpresion {
+    suspend fun imprimirTicketVenta(
+        venta: Venta,
+        empresa: EmpresaDatos? = null
+    ): ResultadoImpresion {
         val preparado = prepararConexion()
         if (!preparado.ok) {
             return preparado
         }
 
         val enviado = BluetoothPrinterManager.escribir(
-            EscPosBuilder.ticketVenta(venta)
+            EscPosBuilder.ticketVenta(venta, empresa)
         )
 
         return resultadoFinal(
@@ -113,7 +117,8 @@ class PrinterRepository(private val context: Context) {
     suspend fun imprimirReciboCobranza(
         pago: Pago,
         venta: Venta?,
-        saldoRestante: Double
+        saldoRestante: Double,
+        empresa: EmpresaDatos? = null
     ): ResultadoImpresion {
         val preparado = prepararConexion()
         if (!preparado.ok) {
@@ -124,7 +129,8 @@ class PrinterRepository(private val context: Context) {
             EscPosBuilder.ticketCobranza(
                 pago = pago,
                 venta = venta,
-                saldoRestante = saldoRestante
+                saldoRestante = saldoRestante,
+                empresa = empresa
             )
         )
 
@@ -134,14 +140,17 @@ class PrinterRepository(private val context: Context) {
         )
     }
 
-    suspend fun imprimirComprobanteCarga(carga: Carga): ResultadoImpresion {
+    suspend fun imprimirComprobanteCarga(
+        carga: Carga,
+        empresa: EmpresaDatos? = null
+    ): ResultadoImpresion {
         val preparado = prepararConexion()
         if (!preparado.ok) {
             return preparado
         }
 
         val enviado = BluetoothPrinterManager.escribir(
-            EscPosBuilder.ticketCarga(carga)
+            EscPosBuilder.ticketCarga(carga, empresa)
         )
 
         return resultadoFinal(
@@ -150,14 +159,17 @@ class PrinterRepository(private val context: Context) {
         )
     }
 
-    suspend fun imprimirComprobanteCompra(compra: Compra): ResultadoImpresion {
+    suspend fun imprimirComprobanteCompra(
+        compra: Compra,
+        empresa: EmpresaDatos? = null
+    ): ResultadoImpresion {
         val preparado = prepararConexion()
         if (!preparado.ok) {
             return preparado
         }
 
         val enviado = BluetoothPrinterManager.escribir(
-            EscPosBuilder.ticketCompra(compra)
+            EscPosBuilder.ticketCompra(compra, empresa)
         )
 
         return resultadoFinal(
@@ -166,7 +178,9 @@ class PrinterRepository(private val context: Context) {
         )
     }
 
-    suspend fun imprimirPrueba(): ResultadoImpresion {
+    suspend fun imprimirPrueba(
+        empresa: EmpresaDatos? = null
+    ): ResultadoImpresion {
         val preparado = prepararConexion()
         if (!preparado.ok) {
             return preparado
@@ -175,7 +189,7 @@ class PrinterRepository(private val context: Context) {
         val nombre = configuracion.first()?.nombre ?: "—"
 
         val enviado = BluetoothPrinterManager.escribir(
-            EscPosBuilder.ticketPrueba(nombre)
+            EscPosBuilder.ticketPrueba(nombre, empresa)
         )
 
         return resultadoFinal(
