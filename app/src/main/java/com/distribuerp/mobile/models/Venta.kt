@@ -8,7 +8,8 @@ data class ItemVentaRequest(
 data class VentaRequest(
     val cliente_id: Int,
     val vendedor_id: Int,
-    val productos: List<ItemVentaRequest>
+    val productos: List<ItemVentaRequest>,
+    val forma_pago: String = "CONTADO"
 )
 
 data class ItemVenta(
@@ -31,7 +32,8 @@ data class Venta(
     val total: Double,
     val items: List<ItemVenta>,
     val pagado: Double = 0.0,
-    val saldo: Double = 0.0
+    val saldo: Double = 0.0,
+    val forma_pago: String = ""
 )
 
 data class VentaResponse(

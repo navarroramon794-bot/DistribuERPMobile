@@ -7,7 +7,10 @@ data class Cliente(
     val telefono: String?,
     val limite_credito: Double,
     val activo: Boolean,
-    val fecha_creacion: String?
+    val fecha_creacion: String?,
+    val credito_autorizado: Boolean = false,
+    val dias_credito: Int = 0,
+    val bloqueado: Boolean = false
 )
 
 data class ClientesResponse(

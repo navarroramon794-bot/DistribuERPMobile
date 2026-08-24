@@ -28,12 +28,14 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -90,6 +92,10 @@ fun NuevaVentaScreen(
     val ventaExitosa = viewModel.ventaExitosa
     val error = viewModel.error
     val mensaje = viewModel.mensaje
+    val formaPagoSeleccionada = viewModel.formaPagoSeleccionada
+    val cargandoCredito = viewModel.cargandoCredito
+    val estadoCredito = viewModel.estadoCredito
+    val creditoDisponible = viewModel.creditoDisponible
 
     val contexto = LocalContext.current
     val impresoraRepositorio = remember {
@@ -328,6 +334,284 @@ fun NuevaVentaScreen(
                                     viewModel.seleccionarCliente(it)
                                 }
                             )
+                        }
+                    }
+
+                    item {
+
+                        Text(
+                            text = "Forma de pago",
+                            style =
+                                MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(
+                                top = 8.dp
+                            )
+                        )
+                    }
+
+                    item {
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            verticalAlignment =
+                                Alignment.CenterVertically,
+                            horizontalArrangement =
+                                Arrangement.spacedBy(16.dp)
+                        ) {
+
+                            Row(
+                                verticalAlignment =
+                                    Alignment.CenterVertically
+                            ) {
+
+                                RadioButton(
+                                    selected =
+                                        formaPagoSeleccionada ==
+                                            "CONTADO",
+                                    onClick = {
+                                        viewModel
+                                            .seleccionarFormaPago(
+                                                "CONTADO"
+                                            )
+                                    }
+                                )
+
+                                Text(
+                                    text = "CONTADO",
+                                    style =
+                                        MaterialTheme.typography.bodyLarge
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment =
+                                    Alignment.CenterVertically
+                            ) {
+
+                                RadioButton(
+                                    selected =
+                                        formaPagoSeleccionada ==
+                                            "CREDITO",
+                                    onClick = {
+                                        viewModel
+                                            .seleccionarFormaPago(
+                                                "CREDITO"
+                                            )
+                                    }
+                                )
+
+                                Text(
+                                    text = "CREDITO",
+                                    style =
+                                        MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
+                    }
+
+                    if (formaPagoSeleccionada == "CREDITO") {
+
+                        if (cargandoCredito) {
+
+                            item {
+
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    shape = RoundedCornerShape(
+                                        16.dp
+                                    )
+                                ) {
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment =
+                                            Alignment.CenterVertically
+                                    ) {
+
+                                        CircularProgressIndicator(
+                                            modifier = Modifier
+                                                .size(18.dp),
+                                            strokeWidth = 2.dp
+                                        )
+
+                                        Text(
+                                            text =
+                                                "  Consultando " +
+                                                "crédito...",
+                                            style =
+                                                MaterialTheme
+                                                    .typography
+                                                    .bodyMedium
+                                        )
+                                    }
+                                }
+                            }
+
+                        } else if (
+                            clienteSeleccionado != null
+                        ) {
+
+                            val cli = clienteSeleccionado!!
+
+                            item {
+
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    shape = RoundedCornerShape(
+                                        16.dp
+                                    ),
+                                    colors = CardDefaults
+                                        .cardColors(
+                                            containerColor =
+                                                MaterialTheme
+                                                    .colorScheme
+                                                    .surfaceVariant
+                                        )
+                                ) {
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalArrangement =
+                                            Arrangement.spacedBy(
+                                                4.dp
+                                            )
+                                    ) {
+
+                                        Text(
+                                            text = "Información de crédito",
+                                            style =
+                                                MaterialTheme
+                                                    .typography
+                                                    .titleSmall,
+                                            fontWeight =
+                                                FontWeight.Bold
+                                        )
+
+                                        val autorizado =
+                                            cli.credito_autorizado
+                                        val bloqueado =
+                                            cli.bloqueado
+
+                                        Text(
+                                            text =
+                                                "Crédito autorizado: " +
+                                                if (autorizado)
+                                                    "Sí"
+                                                else "No",
+                                            style =
+                                                MaterialTheme
+                                                    .typography
+                                                    .bodyMedium
+                                        )
+
+                                        Text(
+                                            text =
+                                                "Límite: " +
+                                                formatearDinero(
+                                                    cli.limite_credito
+                                                ),
+                                            style =
+                                                MaterialTheme
+                                                    .typography
+                                                    .bodyMedium
+                                        )
+
+                                        val utilizado =
+                                            estadoCredito
+                                                ?.total_vendido
+                                                ?.let { tv ->
+                                                    estadoCredito
+                                                        ?.total_cobrado
+                                                        ?.let {
+                                                            c ->
+                                                            tv - c
+                                                        }
+                                                }
+                                                ?: 0.0
+
+                                        Text(
+                                            text =
+                                                "Utilizado: " +
+                                                formatearDinero(
+                                                    utilizado
+                                                ),
+                                            style =
+                                                MaterialTheme
+                                                    .typography
+                                                    .bodyMedium
+                                        )
+
+                                        Text(
+                                            text =
+                                                "Disponible: " +
+                                                formatearDinero(
+                                                    creditoDisponible
+                                                ),
+                                            style =
+                                                MaterialTheme
+                                                    .typography
+                                                    .bodyMedium
+                                        )
+
+                                        Text(
+                                            text =
+                                                "Días de crédito: " +
+                                                cli.dias_credito,
+                                            style =
+                                                MaterialTheme
+                                                    .typography
+                                                    .bodyMedium
+                                        )
+
+                                        if (!autorizado) {
+
+                                            Text(
+                                                text =
+                                                    "El cliente no tiene " +
+                                                    "crédito autorizado.",
+                                                style =
+                                                    MaterialTheme
+                                                        .typography
+                                                        .bodyMedium,
+                                                color =
+                                                    MaterialTheme
+                                                        .colorScheme
+                                                        .error,
+                                                fontWeight =
+                                                    FontWeight.Bold
+                                            )
+                                        }
+
+                                        if (bloqueado) {
+
+                                            Text(
+                                                text =
+                                                    "El cliente está " +
+                                                    "bloqueado para " +
+                                                    "compras a crédito.",
+                                                style =
+                                                    MaterialTheme
+                                                        .typography
+                                                        .bodyMedium,
+                                                color =
+                                                    MaterialTheme
+                                                        .colorScheme
+                                                        .error,
+                                                fontWeight =
+                                                    FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -578,6 +862,24 @@ fun NuevaVentaScreen(
 
                         Text(
                             text = formatearDinero(venta.total),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.SpaceBetween
+                    ) {
+
+                        Text(
+                            text = "Forma de pago",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Text(
+                            text = venta.forma_pago,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold
                         )

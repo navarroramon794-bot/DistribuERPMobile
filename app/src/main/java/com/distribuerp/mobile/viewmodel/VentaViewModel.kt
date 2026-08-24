@@ -9,11 +9,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.distribuerp.mobile.models.Cliente
+import com.distribuerp.mobile.models.EstadoCuentaResponse
 import com.distribuerp.mobile.models.ItemVentaRequest
 import com.distribuerp.mobile.models.Producto
 import com.distribuerp.mobile.models.Vendedor
 import com.distribuerp.mobile.models.Venta
 import com.distribuerp.mobile.models.VentaRequest
+import com.distribuerp.mobile.repository.CobranzaRepository
 import com.distribuerp.mobile.repository.ClienteRepository
 import com.distribuerp.mobile.repository.ProductoRepository
 import com.distribuerp.mobile.repository.VendedorRepository
@@ -29,7 +31,8 @@ class VentaViewModel(
     private val vendedorRepository: VendedorRepository,
     private val clienteRepository: ClienteRepository,
     private val productoRepository: ProductoRepository,
-    private val ventaRepository: VentaRepository
+    private val ventaRepository: VentaRepository,
+    private val cobranzaRepository: CobranzaRepository
 ) : ViewModel() {
 
     var cargandoInicial by mutableStateOf(false)
@@ -49,6 +52,26 @@ class VentaViewModel(
 
     var clienteSeleccionado by mutableStateOf<Cliente?>(null)
         private set
+
+    var formaPagoSeleccionada by mutableStateOf("CONTADO")
+        private set
+
+    var cargandoCredito by mutableStateOf(false)
+        private set
+
+    var estadoCredito by mutableStateOf<EstadoCuentaResponse?>(null)
+        private set
+
+    val creditoDisponible: Double
+        get() {
+            val cliente = clienteSeleccionado ?: return 0.0
+            val ec = estadoCredito
+            val utilizado = ec?.total_vendido
+                ?.let { ec.total_cobrado?.let { c -> it - c } }
+                ?: 0.0
+            return (cliente.limite_credito - utilizado)
+                .coerceAtLeast(0.0)
+        }
 
     val items = mutableStateListOf<ItemTicket>()
 
@@ -134,6 +157,40 @@ class VentaViewModel(
 
     fun seleccionarCliente(cliente: Cliente) {
         clienteSeleccionado = cliente
+        estadoCredito = null
+
+        if (formaPagoSeleccionada == "CREDITO") {
+            cargarInfoCredito()
+        }
+    }
+
+    fun seleccionarFormaPago(forma: String) {
+        if (forma == formaPagoSeleccionada) return
+
+        formaPagoSeleccionada = forma
+        estadoCredito = null
+
+        if (forma == "CREDITO" && clienteSeleccionado != null) {
+            cargarInfoCredito()
+        }
+    }
+
+    private fun cargarInfoCredito() {
+        val cliente = clienteSeleccionado ?: return
+
+        cargandoCredito = true
+
+        cobranzaRepository.obtenerEstadoCuenta(
+            clienteId = cliente.id,
+            onSuccess = { respuesta ->
+                cargandoCredito = false
+                estadoCredito = respuesta
+            },
+            onError = {
+                cargandoCredito = false
+                estadoCredito = null
+            }
+        )
     }
 
     fun agregarProducto(producto: Producto) {
@@ -221,6 +278,31 @@ class VentaViewModel(
             return
         }
 
+        val cliente = clienteSeleccionado!!
+
+        if (formaPagoSeleccionada == "CREDITO") {
+            if (!cliente.credito_autorizado) {
+                mensaje =
+                    "El cliente no tiene crédito autorizado."
+                return
+            }
+
+            if (cliente.bloqueado) {
+                mensaje =
+                    "El cliente está bloqueado para " +
+                    "compras a crédito."
+                return
+            }
+
+            if (total > creditoDisponible) {
+                mensaje =
+                    "Crédito insuficiente. " +
+                    "Disponible: $creditoDisponible. " +
+                    "Venta: $total."
+                return
+            }
+        }
+
         val productos = items.map { item ->
             ItemVentaRequest(
                 producto_id = item.producto.id,
@@ -234,7 +316,8 @@ class VentaViewModel(
             request = VentaRequest(
                 cliente_id = clienteId,
                 vendedor_id = vendedorId,
-                productos = productos
+                productos = productos,
+                forma_pago = formaPagoSeleccionada
             ),
             onSuccess = { venta ->
                 guardando = false
@@ -272,7 +355,8 @@ class VentaViewModel(
                     vendedorRepository = VendedorRepository(),
                     clienteRepository = ClienteRepository(),
                     productoRepository = ProductoRepository(),
-                    ventaRepository = VentaRepository()
+                    ventaRepository = VentaRepository(),
+                    cobranzaRepository = CobranzaRepository()
                 )
             }
         }
