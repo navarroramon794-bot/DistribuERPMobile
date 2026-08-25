@@ -16,7 +16,9 @@ data class ItemCarga(
     val codigo: String,
     val producto: String,
     val cantidad: Double,
-    val unidad: String = ""
+    val unidad: String = "",
+    val vendido: Double = 0.0,
+    val disponible: Double = 0.0
 )
 
 data class Carga(

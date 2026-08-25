@@ -372,51 +372,95 @@ private fun TarjetaItemCargaDetalle(
         shape = RoundedCornerShape(16.dp)
     ) {
 
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
 
-            Icon(
-                imageVector = Icons.Filled.Receipt,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp)
-            )
-
-            Spacer(
-                modifier = Modifier.width(16.dp)
-            )
-
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Text(
-                    text = detalle.producto,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
+                Icon(
+                    imageVector = Icons.Filled.Receipt,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
                 )
 
+                Spacer(
+                    modifier = Modifier.width(16.dp)
+                )
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+
+                    Text(
+                        text = detalle.producto,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Text(
+                        text = "Código ${detalle.codigo}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 Text(
-                    text = "Código ${detalle.codigo}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = if (detalle.unidad.isBlank()) {
+                        formatearCantidad(detalle.cantidad)
+                    } else {
+                        formatearCantidad(detalle.cantidad) + " " + detalle.unidad
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            Text(
-                text = if (detalle.unidad.isBlank()) {
-                    formatearCantidad(detalle.cantidad)
-                } else {
-                    formatearCantidad(detalle.cantidad) + " " + detalle.unidad
-                },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+            val unidad = if (detalle.unidad.isBlank()) "kg" else detalle.unidad
+
+            Spacer(
+                modifier = Modifier.padding(top = 8.dp)
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                Column {
+                    Text(
+                        text = "Vendido",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${formatearCantidad(detalle.vendido)} $unidad",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = "Disponible",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${formatearCantidad(detalle.disponible)} $unidad",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
     }
 }
