@@ -61,6 +61,7 @@ import com.distribuerp.mobile.viewmodel.ClienteViewModel
 fun ClienteDetalleScreen(
     clienteId: Int,
     viewModel: ClienteViewModel,
+    esAdministrador: Boolean = true,
     onVolver: () -> Unit,
     onEditar: (Int) -> Unit
 ) {
@@ -180,40 +181,43 @@ fun ClienteDetalleScreen(
                                 Text("Editar")
                             }
 
-                            Button(
-                                onClick = {
+                            if (esAdministrador) {
 
-                                    mostrarConfirmacion = true
-                                },
-                                modifier = Modifier.weight(1f),
-                                enabled = !eliminando,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = MaterialTheme.colorScheme.onError
-                                )
-                            ) {
+                                Button(
+                                    onClick = {
 
-                                if (eliminando) {
-
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
-                                        color = MaterialTheme.colorScheme.onError,
-                                        strokeWidth = 2.dp
+                                        mostrarConfirmacion = true
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !eliminando,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError
                                     )
+                                ) {
 
-                                } else {
+                                    if (eliminando) {
 
-                                    Icon(
-                                        imageVector = Icons.Filled.Delete,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(18.dp),
+                                            color = MaterialTheme.colorScheme.onError,
+                                            strokeWidth = 2.dp
+                                        )
 
-                                    Spacer(
-                                        modifier = Modifier.width(6.dp)
-                                    )
+                                    } else {
 
-                                    Text("Eliminar")
+                                        Icon(
+                                            imageVector = Icons.Filled.Delete,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+
+                                        Spacer(
+                                            modifier = Modifier.width(6.dp)
+                                        )
+
+                                        Text("Eliminar")
+                                    }
                                 }
                             }
                         }
@@ -237,7 +241,7 @@ fun ClienteDetalleScreen(
         }
     }
 
-    if (mostrarConfirmacion) {
+    if (esAdministrador && mostrarConfirmacion) {
 
         ConfirmDeleteDialog(
             titulo = "Eliminar cliente",

@@ -77,6 +77,7 @@ import kotlinx.coroutines.launch
 fun NuevaVentaScreen(
     viewModel: VentaViewModel,
     empresa: EmpresaDatos? = null,
+    esAdministrador: Boolean = true,
     onAbrirMenu: () -> Unit,
     onFinalizar: () -> Unit
 ) {
@@ -116,6 +117,14 @@ fun NuevaVentaScreen(
         mutableStateOf("")
     }
 
+    val productosDisponibles = remember(productos, esAdministrador) {
+        if (esAdministrador) {
+            productos
+        } else {
+            productos.filter { it.existencia > 0 }
+        }
+    }
+
     val escanearLauncher = rememberLauncherForActivityResult(
         contract = ScanContract()
     ) { resultado: ScanIntentResult ->
@@ -124,7 +133,7 @@ fun NuevaVentaScreen(
 
         if (!contenido.isNullOrBlank()) {
 
-            val producto = productos.firstOrNull {
+            val producto = productosDisponibles.firstOrNull {
                 it.codigo_barras == contenido
             }
 
@@ -161,15 +170,15 @@ fun NuevaVentaScreen(
         exitoImpresion = null
     }
 
-    val filtrados = remember(productos, busqueda) {
+    val filtrados = remember(productosDisponibles, busqueda) {
 
         if (busqueda.isBlank()) {
 
-            productos
+            productosDisponibles
 
         } else {
 
-            productos.filter { producto ->
+            productosDisponibles.filter { producto ->
 
                 producto.nombre.contains(
                     busqueda,

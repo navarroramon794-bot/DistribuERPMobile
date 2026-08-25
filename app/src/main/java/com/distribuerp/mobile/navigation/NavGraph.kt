@@ -118,7 +118,8 @@ object Rutas {
         COMPRAS,
         COMPRA_DETALLE,
         NUEVA_COMPRA,
-        NUEVA_CARGA
+        NUEVA_CARGA,
+        REPORTES
     )
 
     fun clienteDetalle(clienteId: Int): String =
@@ -324,6 +325,8 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
                     ClienteDetalleScreen(
                         clienteId = clienteId,
                         viewModel = clienteViewModel,
+                        esAdministrador =
+                            sesion?.rol == Roles.ADMINISTRADOR,
                         onVolver = {
                             navController.popBackStack()
                         },
@@ -665,6 +668,8 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
                     NuevaVentaScreen(
                         viewModel = ventaViewModel,
                         empresa = empresa,
+                        esAdministrador =
+                            sesion?.rol == Roles.ADMINISTRADOR,
                         onAbrirMenu = {
                             scope.launch {
                                 drawerState.open()
