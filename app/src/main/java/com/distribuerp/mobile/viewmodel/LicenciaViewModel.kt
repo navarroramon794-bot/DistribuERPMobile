@@ -272,6 +272,12 @@ class LicenciaViewModel(
         val esDemo = info.esDemo
         val estadoServer = info.estado ?: info.estado_guardado
 
+        val restantes = info.dias_restantes
+
+        if (esDemo && restantes != null && restantes <= 0) {
+            return EstadoLicencia.DemoExpirada
+        }
+
         return when {
             !info.valida && esDemo ->
                 EstadoLicencia.DemoExpirada

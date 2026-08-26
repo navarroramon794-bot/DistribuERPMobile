@@ -276,20 +276,6 @@ fun NuevaVentaScreen(
                         }
                     }
 
-                    error?.let { aviso ->
-
-                        item {
-
-                            AvisoMensaje(
-                                mensaje = aviso,
-                                onCerrar = {
-
-                                    viewModel.limpiarError()
-                                }
-                            )
-                        }
-                    }
-
                     if (vendedores.isEmpty()) {
 
                         item {
@@ -784,6 +770,20 @@ fun NuevaVentaScreen(
                                             MaterialTheme.colorScheme.primary
                                     )
                                 }
+                            }
+                        }
+
+                        item {
+
+                            error?.let { aviso ->
+
+                                AvisoMensaje(
+                                    mensaje = aviso,
+                                    onCerrar = {
+
+                                        viewModel.limpiarError()
+                                    }
+                                )
                             }
                         }
 

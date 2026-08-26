@@ -29,6 +29,8 @@ class VentaRepository(
 
                     if (response.isSuccessful && body?.venta != null) {
                         onSuccess(body.venta)
+                    } else if (body?.ok == false && !body.mensaje.isNullOrBlank()) {
+                        onError(Throwable(body.mensaje))
                     } else {
                         onError(extraerError(response))
                     }
