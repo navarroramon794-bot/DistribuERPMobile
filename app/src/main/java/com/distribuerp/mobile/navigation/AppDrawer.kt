@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PointOfSale
@@ -62,6 +63,11 @@ val itemsMenuAdministrador = listOf(
         etiqueta = "Vendedores",
         icono = Icons.Filled.Badge,
         ruta = Rutas.VENDEDORES
+    ),
+    ItemMenu(
+        etiqueta = "Ubicación de vendedores",
+        icono = Icons.Filled.LocationOn,
+        ruta = Rutas.MONITOREO_UBICACION
     ),
     ItemMenu(
         etiqueta = "Inventario",
@@ -145,6 +151,11 @@ val itemsMenuVendedor = listOf(
         etiqueta = "Mis Cargas",
         icono = Icons.Filled.LocalShipping,
         ruta = Rutas.CARGAS
+    ),
+    ItemMenu(
+        etiqueta = "Mi Ubicación",
+        icono = Icons.Filled.LocationOn,
+        ruta = Rutas.UBICACION
     ),
     ItemMenu(
         etiqueta = "Configuración",

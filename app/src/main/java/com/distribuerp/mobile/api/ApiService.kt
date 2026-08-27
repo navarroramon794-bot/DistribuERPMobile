@@ -36,6 +36,9 @@ import com.distribuerp.mobile.models.ReporteVentasResponse
 import com.distribuerp.mobile.models.VendedorRequest
 import com.distribuerp.mobile.models.VendedorResponse
 import com.distribuerp.mobile.models.VendedoresResponse
+import com.distribuerp.mobile.models.UbicacionRequest
+import com.distribuerp.mobile.models.UbicacionResponse
+import com.distribuerp.mobile.models.UbicacionesResponse
 import com.distribuerp.mobile.models.VentaRequest
 import com.distribuerp.mobile.models.VentaResponse
 import com.distribuerp.mobile.models.VerificarResponse
@@ -272,4 +275,22 @@ interface ApiService {
     fun crearCompra(
         @Body datos: CompraRequest
     ): Call<CompraResponse>
+
+    @POST("api/ubicacion")
+    fun enviarUbicacion(
+        @Body datos: UbicacionRequest
+    ): Call<UbicacionResponse>
+
+    @GET("api/ubicacion/ultima/{vendedorId}")
+    fun obtenerUltimaUbicacion(
+        @Path("vendedorId") vendedorId: Int
+    ): Call<UbicacionResponse>
+
+    @PUT("api/ubicacion/activo")
+    fun cambiarEstadoUbicacion(
+        @Body datos: Map<String, Boolean>
+    ): Call<UbicacionResponse>
+
+    @GET("api/ubicacion/ultimas")
+    fun obtenerUbicacionesActivas(): Call<UbicacionesResponse>
 }

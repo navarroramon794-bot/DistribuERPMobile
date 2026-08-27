@@ -17,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -51,10 +52,12 @@ import com.distribuerp.mobile.screens.ProveedorFormScreen
 import com.distribuerp.mobile.screens.ProveedoresScreen
 import com.distribuerp.mobile.screens.ReporteFormScreen
 import com.distribuerp.mobile.screens.ReportesScreen
+import com.distribuerp.mobile.screens.UbicacionScreen
 import com.distribuerp.mobile.screens.VendedorDetalleScreen
 import com.distribuerp.mobile.screens.VendedorFormScreen
 import com.distribuerp.mobile.screens.VendedoresScreen
 import com.distribuerp.mobile.screens.LicenciaScreen
+import com.distribuerp.mobile.screens.MonitoreoUbicacionScreen
 import com.distribuerp.mobile.ui.components.BannerDemo
 import com.distribuerp.mobile.ui.components.PantallaCargandoLicencia
 import com.distribuerp.mobile.data.Roles
@@ -66,8 +69,10 @@ import com.distribuerp.mobile.viewmodel.CompraViewModel
 import com.distribuerp.mobile.viewmodel.EstadoLicencia
 import com.distribuerp.mobile.viewmodel.InventarioViewModel
 import com.distribuerp.mobile.viewmodel.LicenciaViewModel
+import com.distribuerp.mobile.viewmodel.MonitoreoUbicacionViewModel
 import com.distribuerp.mobile.viewmodel.ProductoViewModel
 import com.distribuerp.mobile.viewmodel.ProveedorViewModel
+import com.distribuerp.mobile.viewmodel.UbicacionViewModel
 import com.distribuerp.mobile.viewmodel.VendedorViewModel
 import com.distribuerp.mobile.viewmodel.VentaViewModel
 import kotlinx.coroutines.launch
@@ -104,6 +109,8 @@ object Rutas {
     const val DIAGNOSTICO = "diagnostico"
     const val ACERCA_DE = "acerca_de"
     const val ACTUALIZACIONES = "actualizaciones"
+    const val UBICACION = "ubicacion"
+    const val MONITOREO_UBICACION = "ubicacion_vendedores"
 
     val rutasSoloAdministrador = setOf(
         PRODUCTOS,
@@ -119,7 +126,8 @@ object Rutas {
         COMPRA_DETALLE,
         NUEVA_COMPRA,
         NUEVA_CARGA,
-        REPORTES
+        REPORTES,
+        MONITOREO_UBICACION
     )
 
     fun clienteDetalle(clienteId: Int): String =
@@ -196,6 +204,11 @@ fun NavGraph() {
         viewModel(factory = CompraViewModel.Factory)
     val licenciaViewModel: LicenciaViewModel =
         viewModel(factory = LicenciaViewModel.Factory)
+    val contexto = LocalContext.current
+    val ubicacionViewModel: UbicacionViewModel =
+        viewModel(factory = UbicacionViewModel.factory(contexto))
+    val monitoreoUbicacionViewModel: MonitoreoUbicacionViewModel =
+        viewModel(factory = MonitoreoUbicacionViewModel.Factory)
     val sesion by viewModel.sesion.collectAsState()
     val empresa = viewModel.empresa
 
@@ -852,6 +865,35 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
                         },
                         onGuardado = {
                             navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(Rutas.UBICACION) {
+                    UbicacionScreen(
+                        viewModel = ubicacionViewModel,
+                        vendedorId = if (
+                            sesion?.rol == Roles.VENDEDOR
+                        ) {
+                            sesion?.vendedor_id?.toIntOrNull()
+                        } else {
+                            null
+                        },
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        }
+                    )
+                }
+
+                composable(Rutas.MONITOREO_UBICACION) {
+                    MonitoreoUbicacionScreen(
+                        viewModel = monitoreoUbicacionViewModel,
+                        onAbrirMenu = {
+                            scope.launch {
+                                drawerState.open()
+                            }
                         }
                     )
                 }

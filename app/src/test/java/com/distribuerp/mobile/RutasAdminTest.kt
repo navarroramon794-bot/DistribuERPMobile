@@ -88,6 +88,14 @@ class RutasAdminTest {
     }
 
     @Test
+    fun monitoreoUbicacionEsRutaSoloAdmin() {
+        assertTrue(
+            "MONITOREO_UBICACION debe estar en rutasSoloAdministrador",
+            Rutas.rutasSoloAdministrador.contains(Rutas.MONITOREO_UBICACION)
+        )
+    }
+
+    @Test
     fun rolAdministradorValorCorrecto() {
         assertEquals(
             "El constante de rol Administrador debe ser 'Administrador'",
