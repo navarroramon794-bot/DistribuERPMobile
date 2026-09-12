@@ -10,7 +10,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.distribuerp.mobile.models.Ubicacion
 import com.distribuerp.mobile.repository.UbicacionRepository
-import com.distribuerp.mobile.repository.mensajeAmigable
+import com.distribuerp.mobile.utils.GpsConfig
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MonitoreoUbicacionViewModel(
@@ -26,6 +29,50 @@ class MonitoreoUbicacionViewModel(
     var error by mutableStateOf<String?>(null)
         private set
 
+    var filtroVendedorId by mutableStateOf<Int?>(null)
+        private set
+
+    private var pollingJob: Job? = null
+
+    val ubicacionesFiltradas: List<Ubicacion>
+        get() = if (filtroVendedorId == null) ubicaciones else ubicaciones.filter { it.vendedor_id == filtroVendedorId }
+
+    fun setFiltro(vendedorId: Int?) {
+        filtroVendedorId = vendedorId
+    }
+
+    fun estadoAgrupado(fechaIso: String?): (String, String) {
+        if (fechaIso == null) return ("sin ubicación", "NO_LOCATION")
+        return try {
+            val fmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
+            val fecha = java.time.OffsetDateTime.parse(fechaIso, fmt)
+            val ahora = java.time.OffsetDateTime.now()
+            val diffMin = java.time.Duration.between(fecha, ahora).toMinutes()
+            when {
+                diffMin < 2 -> ("reciente", "RECENT")
+                diffMin <= 10 -> ("antigua", "OLD")
+                else -> ("desactualizada", "STALE")
+            }
+        } catch (_: Exception) {
+            ("sin ubicación", "NO_LOCATION")
+        }
+    }
+
+    fun iniciarPolling() {
+        if (pollingJob?.isActive == true) return
+        pollingJob = viewModelScope.launch {
+            while (true) {
+                cargarUbicaciones()
+                delay(GpsConfig.ADMIN_POLL_INTERVAL_MS)
+            }
+        }
+    }
+
+    fun detenerPolling() {
+        pollingJob?.cancel()
+        pollingJob = null
+    }
+
     fun cargarUbicaciones() {
         cargando = true
         error = null
@@ -34,13 +81,15 @@ class MonitoreoUbicacionViewModel(
             repository.obtenerUbicacionesActivas(
                 onSuccess = { lista ->
                     cargando = false
-                    ubicaciones = lista ?: emptyList()
+                    if (lista != null) {
+                        ubicaciones = lista
+                    }
                     error = null
                 },
                 onError = { t ->
                     cargando = false
                     ubicaciones = emptyList()
-                    error = mensajeAmigable(t)
+                    error = t.message
                 }
             )
         }
