@@ -39,6 +39,8 @@ import com.distribuerp.mobile.models.VendedoresResponse
 import com.distribuerp.mobile.models.UbicacionRequest
 import com.distribuerp.mobile.models.UbicacionResponse
 import com.distribuerp.mobile.models.UbicacionesResponse
+import com.distribuerp.mobile.models.ChangePasswordRequest
+import com.distribuerp.mobile.models.ChangePasswordResponse
 import com.distribuerp.mobile.models.VentaRequest
 import com.distribuerp.mobile.models.VentaResponse
 import com.distribuerp.mobile.models.VerificarResponse
@@ -85,6 +87,11 @@ interface ApiService {
     fun login(
         @Body datos: LoginRequest
     ): Call<LoginResponse>
+
+    @POST("api/password/change")
+    fun cambiarPassword(
+        @Body datos: ChangePasswordRequest
+    ): Call<ChangePasswordResponse>
 
     @GET("logout")
     fun logout(): Call<ResponseBody>

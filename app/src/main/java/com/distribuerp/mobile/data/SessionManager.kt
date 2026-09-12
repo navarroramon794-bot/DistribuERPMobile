@@ -1,6 +1,7 @@
 package com.distribuerp.mobile.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -20,6 +21,7 @@ class SessionManager(private val context: Context) {
         val ROL = stringPreferencesKey("rol")
         val VENDEDOR_ID = stringPreferencesKey("vendedor_id")
         val VENDEDOR = stringPreferencesKey("vendedor")
+        val PASSWORD_TEMPORAL = booleanPreferencesKey("password_temporal")
     }
 
     val sesion: Flow<UsuarioGuardado?> =
@@ -36,7 +38,8 @@ class SessionManager(private val context: Context) {
                     correo = correo,
                     rol = prefs[Keys.ROL],
                     vendedor_id = prefs[Keys.VENDEDOR_ID],
-                    vendedor = prefs[Keys.VENDEDOR]
+                    vendedor = prefs[Keys.VENDEDOR],
+                    password_temporal = prefs[Keys.PASSWORD_TEMPORAL] ?: false
                 )
             }
         }
@@ -49,6 +52,13 @@ class SessionManager(private val context: Context) {
             prefs[Keys.ROL] = usuario.rol ?: ""
             prefs[Keys.VENDEDOR_ID] = usuario.vendedor_id ?: ""
             prefs[Keys.VENDEDOR] = usuario.vendedor ?: ""
+            prefs[Keys.PASSWORD_TEMPORAL] = usuario.password_temporal ?: false
+        }
+    }
+
+    suspend fun actualizarPasswordTemporal(valor: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PASSWORD_TEMPORAL] = valor
         }
     }
 
@@ -65,5 +75,6 @@ data class UsuarioGuardado(
     val correo: String,
     val rol: String?,
     val vendedor_id: String? = null,
-    val vendedor: String? = null
+    val vendedor: String? = null,
+    val password_temporal: Boolean? = null
 )

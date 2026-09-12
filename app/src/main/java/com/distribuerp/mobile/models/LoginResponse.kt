@@ -12,5 +12,6 @@ data class Usuario(
     val correo: String,
     val rol: String?,
     val vendedor_id: Int? = null,
-    val vendedor: String? = null
+    val vendedor: String? = null,
+    val password_temporal: Boolean? = null
 )

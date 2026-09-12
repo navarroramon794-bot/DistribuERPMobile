@@ -8,7 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-val versionJsonPath = providers.gradleProperty("versionJsonPath").getOrElse("C:/Distribu-erp/version.json")
+val versionJsonPath = providers.gradleProperty("versionJsonPath").getOrElse(
+    rootProject.file("version.json").takeIf { it.exists() }?.absolutePath ?: "C:/Distribu-erp/version.json"
+)
 
 val apiUrlProp: String? = providers.gradleProperty("apiUrl").getOrNull()
 

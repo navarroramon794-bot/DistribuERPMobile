@@ -52,6 +52,7 @@ import com.distribuerp.mobile.screens.ProveedorFormScreen
 import com.distribuerp.mobile.screens.ProveedoresScreen
 import com.distribuerp.mobile.screens.ReporteFormScreen
 import com.distribuerp.mobile.screens.ReportesScreen
+import com.distribuerp.mobile.screens.ChangePasswordScreen
 import com.distribuerp.mobile.screens.UbicacionScreen
 import com.distribuerp.mobile.screens.VendedorDetalleScreen
 import com.distribuerp.mobile.screens.VendedorFormScreen
@@ -111,6 +112,7 @@ object Rutas {
     const val ACTUALIZACIONES = "actualizaciones"
     const val UBICACION = "ubicacion"
     const val MONITOREO_UBICACION = "ubicacion_vendedores"
+    const val CAMBIAR_PASSWORD = "cambiar_password?obligatorio={obligatorio}"
 
     val rutasSoloAdministrador = setOf(
         PRODUCTOS,
@@ -227,8 +229,25 @@ fun NavGraph() {
         estadoLicencia == EstadoLicencia.Activa ||
             estadoLicencia == EstadoLicencia.Demo
 
-LaunchedEffect(sesion, rutaActual, accesoPermitido) {
+    LaunchedEffect(sesion, rutaActual, accesoPermitido) {
         if (!accesoPermitido) {
+            return@LaunchedEffect
+        }
+
+        val esTemporal = sesion?.password_temporal == true
+
+        // Forzar cambio si es temporal y no estamos ya en esa pantalla
+        if (esTemporal && rutaActual != null && !rutaActual.startsWith("cambiar_password")) {
+            navController.navigate("cambiar_password?obligatorio=true") {
+                popUpTo(Rutas.LOGIN) { inclusive = false }
+                launchSingleTop = true
+            }
+            return@LaunchedEffect
+        }
+        if (!esTemporal && rutaActual?.startsWith("cambiar_password") == true) {
+            navController.navigate(Rutas.DASHBOARD) {
+                popUpTo("cambiar_password?obligatorio={obligatorio}") { inclusive = true }
+            }
             return@LaunchedEffect
         }
 
@@ -239,9 +258,15 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
 
         when {
             sesion != null && rutaActual == Rutas.LOGIN -> {
-                navController.navigate(Rutas.DASHBOARD) {
-                    popUpTo(Rutas.LOGIN) {
-                        inclusive = true
+                if (esTemporal) {
+                    navController.navigate("cambiar_password?obligatorio=true") {
+                        popUpTo(Rutas.LOGIN) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(Rutas.DASHBOARD) {
+                        popUpTo(Rutas.LOGIN) {
+                            inclusive = true
+                        }
                     }
                 }
             }
@@ -285,6 +310,28 @@ LaunchedEffect(sesion, rutaActual, accesoPermitido) {
 
                 composable(Rutas.LOGIN) {
                     LoginScreen(viewModel = viewModel)
+                }
+
+                composable(
+                    route = Rutas.CAMBIAR_PASSWORD,
+                    arguments = listOf(
+                        navArgument("obligatorio") {
+                            type = NavType.BoolType
+                            defaultValue = false
+                        }
+                    )
+                ) { entrada ->
+                    val obligatorio = entrada.arguments?.getBoolean("obligatorio") ?: false
+                    ChangePasswordScreen(
+                        obligatorio = obligatorio || (sesion?.password_temporal == true),
+                        onSuccess = {
+                            navController.navigate(Rutas.DASHBOARD) {
+                                popUpTo(Rutas.CAMBIAR_PASSWORD) { inclusive = true }
+                                popUpTo(Rutas.LOGIN) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
                 }
 
                 composable(Rutas.DASHBOARD) {

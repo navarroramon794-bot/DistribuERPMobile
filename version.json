@@ -1,0 +1,17 @@
+{
+  "app": "DistribuERP",
+  "app_mobile": "DistribuERP Mobile",
+  "app_apk": "DistribuERP_Mobile_v1.3.0.apk",
+  "version": "1.3.0",
+  "build": 7,
+  "fecha_compilacion": "2026-09-11",
+  "fecha_publicacion": "2026-09-11",
+  "android_min": "Android 8.0 (API 26)",
+  "cambios": [
+    "Fase C — gestión de credenciales de vendedores: password_temporal y password_version.",
+    "Login ahora expone password_temporal para forzar cambio obligatorio.",
+    "Nuevo endpoint POST /api/password/change con validación fuerte (8+, mayúscula, minúscula, número, símbolo).",
+    "Pantalla obligatoria de cambio de contraseña cuando password_temporal=true.",
+    "Invalidación de sesiones anteriores por password_version."
+  ]
+}

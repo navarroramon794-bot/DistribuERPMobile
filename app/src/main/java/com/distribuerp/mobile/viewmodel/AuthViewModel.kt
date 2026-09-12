@@ -182,7 +182,8 @@ class AuthViewModel(
                                                 vendedor_id =
                                                     usuario.vendedor_id
                                                         ?.toString(),
-                                                vendedor = usuario.vendedor
+                                                vendedor = usuario.vendedor,
+                                                password_temporal = usuario.password_temporal
                                             )
                                         )
                                         cargarEmpresa()
