@@ -41,20 +41,20 @@ class MonitoreoUbicacionViewModel(
         filtroVendedorId = vendedorId
     }
 
-    fun estadoAgrupado(fechaIso: String?): (String, String) {
-        if (fechaIso == null) return ("sin ubicación", "NO_LOCATION")
+    fun estadoAgrupado(fechaIso: String?): Pair<String, String> {
+        if (fechaIso == null) return Pair("sin ubicación", "NO_LOCATION")
         return try {
             val fmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
             val fecha = java.time.OffsetDateTime.parse(fechaIso, fmt)
             val ahora = java.time.OffsetDateTime.now()
             val diffMin = java.time.Duration.between(fecha, ahora).toMinutes()
             when {
-                diffMin < 2 -> ("reciente", "RECENT")
-                diffMin <= 10 -> ("antigua", "OLD")
-                else -> ("desactualizada", "STALE")
+                diffMin < 2 -> Pair("reciente", "RECENT")
+                diffMin <= 10 -> Pair("antigua", "OLD")
+                else -> Pair("desactualizada", "STALE")
             }
         } catch (_: Exception) {
-            ("sin ubicación", "NO_LOCATION")
+            Pair("sin ubicación", "NO_LOCATION")
         }
     }
 

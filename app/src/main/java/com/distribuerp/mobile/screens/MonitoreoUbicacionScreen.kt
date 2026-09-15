@@ -1,6 +1,8 @@
 package com.distribuerp.mobile.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,14 +10,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,18 +27,25 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.distribuerp.mobile.models.Ubicacion
+import com.distribuerp.mobile.ui.map.MapaUbicacionesVendedores
 import com.distribuerp.mobile.viewmodel.MonitoreoUbicacionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,14 +54,29 @@ fun MonitoreoUbicacionScreen(
     viewModel: MonitoreoUbicacionViewModel,
     onAbrirMenu: () -> Unit
 ) {
-    LaunchedEffect(Unit) {
-        viewModel.cargarUbicaciones()
+    var expandido by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        viewModel.iniciarPolling()
+        onDispose { viewModel.detenerPolling() }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ubicación de vendedores") },
+                title = {
+                    Column {
+                        Text(
+                            text = "Monitoreo GPS",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Ubicación de vendedores en campo",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onAbrirMenu) {
                         Icon(
@@ -58,7 +84,11 @@ fun MonitoreoUbicacionScreen(
                             contentDescription = "Abrir menú"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         }
     ) { paddingValues ->
@@ -67,136 +97,215 @@ fun MonitoreoUbicacionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            Button(
-                onClick = { viewModel.cargarUbicaciones() },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !viewModel.cargando
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Actualizar ubicaciones")
-            }
-
-            viewModel.error?.let { error ->
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
-            when {
-                viewModel.cargando -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator()
+            // ── Filtro vendedor ────
+            if (viewModel.ubicaciones.isNotEmpty()) {
+                val seleccionado = viewModel.filtroVendedorId?.let { id -> viewModel.ubicaciones.find { it.vendedor_id == id }?.vendedor } ?: "Todos"
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    androidx.compose.material3.OutlinedButton(onClick = { expandido = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Filtrar: $seleccionado")
                     }
-                }
-
-                viewModel.ubicaciones.isEmpty() -> {
-                    Text(
-                        text = "Actualmente no hay vendedores compartiendo ubicación.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 32.dp)
-                    )
-                }
-
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(
-                            items = viewModel.ubicaciones,
-                            key = { it.vendedor_id ?: it.hashCode() }
-                        ) { ubicacion ->
-                            TarjetaVendedorUbicacion(ubicacion = ubicacion)
+                    androidx.compose.material3.DropdownMenu(expanded = expandido, onDismissRequest = { expandido = false }) {
+                        androidx.compose.material3.DropdownMenuItem(text = { Text("Todos") }, onClick = { viewModel.setFiltro(null); expandido = false })
+                        viewModel.ubicaciones.forEach { ub ->
+                            androidx.compose.material3.DropdownMenuItem(text = { Text("${ub.vendedor ?: "ID ${ub.vendedor_id}"} — ${viewModel.estadoAgrupado(ub.fecha).first}") }, onClick = { viewModel.setFiltro(ub.vendedor_id); expandido = false })
                         }
                     }
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun TarjetaVendedorUbicacion(
-    ubicacion: Ubicacion
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
+            // ── Header con estadísticas y actualizar ────
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Filled.LocationOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = ubicacion.vendedor ?: "Vendedor ${ubicacion.vendedor_id}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 1.dp
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.People,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(
+                            modifier = Modifier.width(10.dp)
+                        )
+
+                        Column {
+                            Text(
+                                text = "${viewModel.ubicaciones.size}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (viewModel.ubicaciones.size == 1)
+                                    "vendedor activo"
+                                else
+                                    "vendedores activos",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = { viewModel.cargarUbicaciones() },
+                    enabled = !viewModel.cargando,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Actualizar")
+                }
             }
 
-            Text(
-                text = if (ubicacion.activo) "Activo" else "Inactivo",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (ubicacion.activo) {
-                    Color(0xFF2E7D32)
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                fontWeight = FontWeight.Medium
-            )
-
-            Text(
-                text = "Ubicación: ${ubicacion.latitud}, ${ubicacion.longitud}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            ubicacion.precision_m?.let {
-                Text(
-                    text = "Precisión: %.1f m".format(it),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+            // ── Error ───────────────────────────────────
+            viewModel.error?.let { error ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
             }
 
-            ubicacion.velocidad?.let {
-                Text(
-                    text = "Velocidad: %.1f m/s".format(it),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+            // ── Contenido ───────────────────────────────
+            // El mapa se compone una única vez y NO se destruye ni se recrea en
+            // cada carga/actualización. Los estados de carga y vacío se dibujan
+            // como capas superpuestas sobre él, evitando que el MapView salga de
+            // composición (lo que provocaba recarga completa de tiles: blanco→x).
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                val lista = viewModel.ubicacionesFiltradas
+                if (lista.isNotEmpty()) {
+                    MapaUbicacionesVendedores(
+                        ubicaciones = lista,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
-            ubicacion.fecha?.let {
-                Text(
-                    text = "Última actualización: $it",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                when {
+                    viewModel.cargando -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(40.dp),
+                                    strokeWidth = 3.dp
+                                )
+                                Spacer(
+                                    modifier = Modifier.height(12.dp)
+                                )
+                                Text(
+                                    text = "Actualizando ubicaciones...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+
+                    viewModel.ubicacionesFiltradas.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier.size(64.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.LocationOn,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = if (viewModel.ubicaciones.isEmpty()) "Sin vendedores en campo" else "Sin ubicación para filtro",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+
+                                Text(
+                                    text = if (viewModel.ubicaciones.isEmpty()) "Cuando los vendedores activen el\ncompartir ubicación, aparecerán aquí." else "No hay datos para el vendedor seleccionado.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

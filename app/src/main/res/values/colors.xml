@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Marca -->
     <color name="marca_azul_oscuro">#0D47A1</color>
-    <color name="marca_azul_claro">#1565C0</color>
+    <color name="marca_azul_principal">#1565C0</color>
+    <color name="marca_azul_claro">#42A5F5</color>
     <color name="marca_naranja">#EF6C00</color>
     <color name="marca_naranja_brillante">#FFA000</color>
+
+    <!-- Fondo / Superficie -->
+    <color name="fondo_claro">#F8FAFC</color>
+    <color name="surface_claro">#FFFFFF</color>
+    <color name="fondo_oscuro">#0F172A</color>
+    <color name="surface_oscuro">#1E293B</color>
+
+    <!-- Texto -->
+    <color name="texto_primario">#1E293B</color>
+    <color name="texto_secundario">#64748B</color>
+
+    <!-- Estados -->
+    <color name="success">#2E7D32</color>
+    <color name="warning">#EF6C00</color>
+    <color name="error">#C62828</color>
+    <color name="info">#1565C0</color>
 </resources>

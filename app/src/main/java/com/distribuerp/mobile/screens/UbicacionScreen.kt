@@ -1,10 +1,7 @@
 package com.distribuerp.mobile.screens
 
 import android.Manifest
-import android.app.Activity
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -23,15 +20,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.LocationSearching
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,13 +37,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,58 +51,114 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
-import com.distribuerp.mobile.R
 import com.distribuerp.mobile.models.Ubicacion
-import com.distribuerp.mobile.viewmodel.MonitoreoUbicacionViewModel
-import com.distribuerp.mobile.utils.GpsConfig
-import kotlin.runWithCoroutines
+import com.distribuerp.mobile.viewmodel.UbicacionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UbicacionScreen(
-    viewModel: MonitoreoUbicacionViewModel,
+    viewModel: UbicacionViewModel,
     vendedorId: Int?,
+    esVendedor: Boolean,
     onAbrirMenu: () -> Unit
 ) {
-    val context = LocalContext.current
-    val activity = context as? Activity
+    val contexto = LocalContext.current
 
-    var permisoConcedido by remember {
-        mutableStateOf(viewModel::class.java.getDeclaredMethod("tienePermisoUbicacion", context::class.java).invoke(null, context) as Boolean)
+    var permisosRefresco by remember { mutableIntStateOf(0) }
+    var paso by remember { mutableIntStateOf(0) }       // 0 idle, 1 ubicación, 2 notificaciones, 3 segundo plano, 4 iniciar
+    var intencion by remember { mutableIntStateOf(0) }  // 0 ninguna, 1 activar tracking, 2 obtener ubicación
+    var aviso by remember { mutableStateOf<String?>(null) }
+
+    val permisoUbicacion = remember(permisosRefresco) {
+        viewModel.tienePermisoUbicacion(contexto)
+    }
+    val gpsEncendido = viewModel.isGpsEnabled(contexto)
+    val permisoNotificacion = remember(permisosRefresco) {
+        viewModel.tienePermisoNotificacion(contexto)
+    }
+    val permisoBackground = remember(permisosRefresco) {
+        viewModel.tienePermisoBackground(contexto)
     }
 
-    var mostrarRationale by remember { mutableStateOf(false) }
+    val lanzadorUbicacion = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { _ ->
+        permisosRefresco++
+        when {
+            intencion == 1 && !viewModel.tienePermisoUbicacion(contexto) ->
+                aviso = "Se requiere el permiso de ubicación para compartirla."
+            intencion == 1 -> paso = 2
+            intencion == 2 && viewModel.tienePermisoUbicacion(contexto) -> {
+                intencion = 0
+                viewModel.obtenerUbicacionActual()
+            }
+        }
+    }
 
-    val lanzadorPermiso = rememberLauncherForActivityResult(
+    val lanzadorNotificacion = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { concedido ->
-        permisoConcedido = concedido
-        if (concedido) {
-            // Solicitar ubicaciones después de conceder permiso
-            viewModel.cargarUbicaciones()
-        } else {
-            mostrarRationale = true
+    ) { _ ->
+        permisosRefresco++
+        if (intencion == 1) paso = 3
+    }
+
+    val lanzadorBackground = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        permisosRefresco++
+        if (intencion == 1) paso = 4
+    }
+
+    LaunchedEffect(paso) {
+        when (paso) {
+            1 -> {
+                if (viewModel.tienePermisoUbicacion(contexto)) {
+                    paso = 2
+                } else {
+                    lanzadorUbicacion.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                }
+            }
+            2 -> {
+                if (Build.VERSION.SDK_INT >= 33 &&
+                    !viewModel.tienePermisoNotificacion(contexto)
+                ) {
+                    lanzadorNotificacion.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    paso = 3
+                }
+            }
+            3 -> {
+                if (Build.VERSION.SDK_INT >= 29 &&
+                    !viewModel.tienePermisoBackground(contexto)
+                ) {
+                    lanzadorBackground.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                } else {
+                    paso = 4
+                }
+            }
+            4 -> {
+                intencion = 0
+                viewModel.cambiarEstadoUbicacion(contexto, true)
+                paso = 0
+            }
         }
     }
 
-    // Lifecycle: iniciar polling al entrar, detener al salir
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.detenerPolling()
-        }
-    }
-
-    // Iniciar polling cuando la pantalla es visible y hay permiso
     LaunchedEffect(Unit) {
-        if (permisoConcedido) {
-            viewModel.iniciarPolling()
+        if (esVendedor && vendedorId != null) {
+            viewModel.cargarUltimaUbicacion(vendedorId)
         }
     }
 
-    // Actualizar filtro sin crear polling duplicado
-    LaunchedEffect(filtroVendedorId) {
-        // Solo actualiza el filtro, el polling ya está corriendo
+    LaunchedEffect(esVendedor, vendedorId, viewModel.activo) {
+        if (esVendedor && vendedorId != null) {
+            viewModel.sincronizarTracking(contexto, vendedorId, esVendedor)
+        }
     }
 
     Scaffold(
@@ -118,7 +166,7 @@ fun UbicacionScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Monitoreo GPS",
+                        text = "Mi Ubicación",
                         fontWeight = FontWeight.SemiBold
                     )
                 },
@@ -135,7 +183,7 @@ fun UbicacionScreen(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
-        } { paddingValues ->
+        }) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -146,168 +194,280 @@ fun UbicacionScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // ── Estado del polling ────────────────────────
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 1.dp
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            if (!esVendedor || vendedorId == null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 ) {
-                    // Indicador de estado de polling
-                    val (estadoTexto, estadoColor) = when {
-                        viewModel.cargando -> ("Actualizando...", MaterialTheme.colorScheme.primary)
-                        viewModel.ubicaciones.isEmpty() && !viewModel.cargando -> ("Sin datos", MaterialTheme.colorScheme.onSurfaceVariant)
-                        else -> ("Actualizado", MaterialTheme.colorScheme.secondary)
-                    }
+                    Text(
+                        text = "El tracking de ubicación está disponible solo para vendedores con un vendedor asignado.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
 
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = estadoColor,
-                        modifier = Modifier.size(44.dp)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 1.dp
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (viewModel.activo)
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant
                         ) {
-                            Icon(
-                                imageVector = if (viewModel.cargando) Icons.Filled.Refresh else Icons.Fixed.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(22.dp)
+                            Box(
+                                modifier = Modifier.size(44.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.LocationOn,
+                                    contentDescription = null,
+                                    tint = if (viewModel.activo)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Compartir ubicación",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (viewModel.activo)
+                                    "Compartiendo con el administrador"
+                                else
+                                    "El administrador podrá verte en el monitoreo",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+
+                        Switch(
+                            checked = viewModel.activo,
+                            onCheckedChange = { nuevo ->
+                                aviso = null
+                                if (nuevo) {
+                                    intencion = 1
+                                    paso = 1
+                                } else {
+                                    intencion = 0
+                                    viewModel.cambiarEstadoUbicacion(contexto, false)
+                                }
+                            }
+                        )
                     }
+                }
 
-                    Spacer(
-                        modifier = Modifier.width(8.dp)
-                    )
-
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
                     Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.Center
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = estadoTexto,
+                            text = "Estado del dispositivo",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            text = "Actualización cada ${GpsConfig.ADMIN_POLL_INTERVAL_MS / 1000}s",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        FilaEstado(
+                            etiqueta = "Permiso de ubicación",
+                            ok = permisoUbicacion
                         )
-                    }
-                }
-            }
-
-            // ── Filtro por vendedor ───────────────────────
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Filtrar por vendedor",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    OutlinedButton(
-                        onClick = { viewModel.setFiltro(null) },
-                        modifier = Modifier.size(80.dp),
-                        enabled = !viewModel.cargando,
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (viewModel.filtroVendedorId == null) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface
+                        FilaEstado(
+                            etiqueta = "GPS del dispositivo",
+                            ok = gpsEncendido
                         )
-                    ) {
-                        Text("Todos")
-                    }
-
-                    if (viewModel.ubicaciones.isNotEmpty()) {
-                        // Simulación de filtro - en implementación completa usaría un spinner
-                        Text(
-                            text = "ID: ${viewModel.filtroVendedorId ?: "todos"}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            // ── Lista de ubicaciones con indicadores de estado ────────
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (viewModel.ubicaciones.isEmpty()) {
-                        Text(
-                            text = "Sin ubicaciones registradas",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    } else {
-                        viewModel.ubicaciones.forEach { ubicacion ->
-                            // Calcular estado de la ubicación
-                            val (edad, tipoEstado) = viewModel.estadoAgrupado(ubicacion.fecha)
-                            val esVendedorSeleccionado = viewModel.filtroVendedorId == null || ubicacion.vendedor_id == viewModel.filtroVendedorId
-
-                            if (esVendedorSeleccionado) {
-                                LocationCard(
-                                    ubicacion = ubicacion,
-                                    estadoTipo = tipoEstado,
-                                    edadTexto = edad
-                                )
-                            }
+                        if (Build.VERSION.SDK_INT >= 33) {
+                            FilaEstado(
+                                etiqueta = "Notificaciones",
+                                ok = permisoNotificacion
+                            )
+                        }
+                        if (Build.VERSION.SDK_INT >= 29) {
+                            FilaEstado(
+                                etiqueta = "Ubicación en segundo plano",
+                                ok = permisoBackground
+                            )
                         }
                     }
                 }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Última ubicación enviada",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        val ultima = viewModel.ultimaUbicacion
+                        if (ultima == null) {
+                            Text(
+                                text = "Aún no se ha enviado ninguna ubicación.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            DatosUbicacion(ubicacion = ultima)
+                        }
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Mi ubicación actual",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        val actual = viewModel.ubicacionActual
+
+                        OutlinedButton(
+                            onClick = {
+                                aviso = null
+                                if (viewModel.tienePermisoUbicacion(contexto)) {
+                                    viewModel.obtenerUbicacionActual()
+                                } else {
+                                    intencion = 2
+                                    lanzadorUbicacion.launch(
+                                        arrayOf(
+                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                                }
+                            },
+                            enabled = !viewModel.cargando,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.MyLocation,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Obtener ubicación actual")
+                        }
+
+                        if (viewModel.cargando) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.dp),
+                                    strokeWidth = 3.dp
+                                )
+                            }
+                        }
+
+                        if (actual != null) {
+                            DatosUbicacion(ubicacion = actual)
+
+                            Button(
+                                onClick = { viewModel.enviarUbicacionActual() },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Send,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Enviar ubicación")
+                            }
+                        }
+
+                        Text(
+                            text = "El envío automático ocurre mientras compartes tu ubicación.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
-            // ── Loading ────────────────────────────────
-            if (viewModel.cargando) {
-                Row(
+            aviso?.let { texto ->
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
                 ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(32.dp),
-                        strokeWidth = 3.dp
+                    Text(
+                        text = texto,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(12.dp)
                     )
                 }
             }
 
-            // ── Mensajes ───────────────────────────────
             viewModel.error?.let { error ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -324,97 +484,84 @@ fun UbicacionScreen(
                     )
                 }
             }
+
+            viewModel.mensaje?.let { mensaje ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Text(
+                        text = mensaje,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
         }
-    )
+    }
 }
 
 @Composable
-private fun LocationCard(
-    ubicacion: Ubicacion,
-    estadoTipo: String,
-    edadTexto: String
-) {
-    val colorEstado = when (estadoTipo) {
-        "reciente" -> MaterialTheme.colorScheme.primary
-        "antigua" -> MaterialTheme.colorScheme.warning
-        "desactualizada" -> MaterialTheme.colorScheme.error
-        "sin ubicación" -> MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Card(
+private fun DatosUbicacion(ubicacion: Ubicacion) {
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            padding = 16.dp
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.LocationOn,
-                    contentDescription = null,
-                    tint = colorEstado,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = "Vendedor ${ubicacion.vendedor_id}",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                FilaDato("Latitud", "%.6f".format(ubicacion.latitud))
-                FilaDato("Longitud", "%.6f".format(ubicacion.longitud))
-                ubicacion.precision_m?.let {
-                    FilaDato("Precisión", "%.1f m".format(it))
-                }
-                ubicacion.velocidad?.let {
-                    FilaDato("Velocidad", "%.1f m/s".format(it))
-                }
-                ubicacion.fuente?.let {
-                    FilaDato("Fuente", it)
-                }
-                ubicacion.fecha?.let {
-                    FilaDato("Última actualización", it)
-                }
-                // Indicador de estado
-                HLine()
-                Text(
-                    text = "Estado: ${estadoTipo.capitalize()}",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                    color = colorEstado
-                )
-                Text(
-                    text = "(${edadTexto})",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colorEstado.copy(alpha = 0.8f)
-                )
-            }
+        FilaDato("Latitud", "%.6f".format(ubicacion.latitud))
+        FilaDato("Longitud", "%.6f".format(ubicacion.longitud))
+        ubicacion.precision_m?.let {
+            FilaDato("Precisión", "%.1f m".format(it))
+        }
+        ubicacion.velocidad?.let {
+            FilaDato("Velocidad", "%.1f m/s".format(it))
+        }
+        ubicacion.fuente?.let {
+            FilaDato("Fuente", it)
+        }
+        ubicacion.fecha?.let {
+            FilaDato("Fecha", it)
         }
     }
 }
 
 @Composable
-private fun HLine() {
-    Canvas(modifier = Modifier.height(1.dp).fillMaxWidth()) {
-        drawRect(
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-            size = Size(CanvasWidth, 1.dp)
+private fun FilaEstado(
+    etiqueta: String,
+    ok: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = etiqueta,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = if (ok)
+                MaterialTheme.colorScheme.secondaryContainer
+            else
+                MaterialTheme.colorScheme.errorContainer
+        ) {
+            Text(
+                text = if (ok) "OK" else "Faltante",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = if (ok)
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                else
+                    MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+            )
+        }
     }
 }
 

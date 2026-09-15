@@ -926,6 +926,7 @@ fun NavGraph() {
                         } else {
                             null
                         },
+                        esVendedor = sesion?.rol == Roles.VENDEDOR,
                         onAbrirMenu = {
                             scope.launch {
                                 drawerState.open()
@@ -994,8 +995,15 @@ fun NavGraph() {
 
     if (esPantallaConDrawer) {
 
+        // En Monitoreo GPS el gesto horizontal debe ser capturado por el mapa,
+        // no por el Drawer. Se deshabilita SOLO la apertura del Drawer por gesto
+        // en esa pantalla; el botón hamburguesa (☰) sigue abriendo el menú.
+        val esMonitoreoGPS =
+            rutaActual == Rutas.MONITOREO_UBICACION
+
         ModalNavigationDrawer(
             drawerState = drawerState,
+            gesturesEnabled = !esMonitoreoGPS,
             drawerContent = {
 
                 DrawerContenido(

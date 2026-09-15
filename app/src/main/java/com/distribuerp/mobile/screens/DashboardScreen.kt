@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +32,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,15 +42,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.distribuerp.mobile.data.Roles
 import com.distribuerp.mobile.ui.components.ErrorContent
@@ -70,13 +76,21 @@ fun DashboardScreen(
     val dashboard = dashboardViewModel.dashboard
     val error = dashboardViewModel.error
     val sesion by authViewModel.sesion.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    val subtitulo =
-        when (sesion?.rol) {
-            Roles.ADMINISTRADOR -> "Administrador"
-            Roles.VENDEDOR -> sesion?.vendedor ?: sesion?.nombre ?: ""
-            else -> ""
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) dashboardViewModel.cargar()
         }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val nombre = when (sesion?.rol) {
+        Roles.ADMINISTRADOR -> "Administrador"
+        Roles.VENDEDOR -> sesion?.vendedor ?: sesion?.nombre ?: "Vendedor"
+        else -> "Usuario"
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -84,183 +98,63 @@ fun DashboardScreen(
             TopAppBar(
                 title = {
                     Column {
-
-                        Text(
-                            text = "DistribuERP Mobile",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            text = subtitulo,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                                alpha = 0.8f
-                            )
-                        )
+                        Text("DistribuERP", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Panel comercial", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.76f))
                     }
                 },
                 navigationIcon = {
-
-                    IconButton(
-                        onClick = onAbrirMenu
-                    ) {
-
-                        Icon(
-                            imageVector = Icons.Filled.Menu,
-                            contentDescription = "Abrir menú"
-                        )
-                    }
+                    IconButton(onClick = onAbrirMenu) { Icon(Icons.Filled.Menu, contentDescription = "Abrir menú") }
                 },
                 actions = {
-
-                    IconButton(
-                        onClick = {
-                            dashboardViewModel.cargar()
-                        }
-                    ) {
-
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = "Actualizar"
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            authViewModel.cerrarSesion()
-                        }
-                    ) {
-
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Logout,
-                            contentDescription = "Cerrar sesión"
-                        )
-                    }
+                    IconButton(onClick = { dashboardViewModel.cargar() }) { Icon(Icons.Filled.Refresh, contentDescription = "Actualizar resumen") }
+                    IconButton(onClick = { authViewModel.cerrarSesion() }) { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión") }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
                 )
             )
         },
         floatingActionButton = {
-
             ExtendedFloatingActionButton(
                 onClick = onNavegarClientes,
-                icon = {
-
-                    Icon(
-                        imageVector = Icons.Filled.People,
-                        contentDescription = null
-                    )
-                },
-                text = {
-
-                    Text("Clientes")
-                }
+                icon = { Icon(Icons.Filled.People, contentDescription = null) },
+                text = { Text("Clientes", fontWeight = FontWeight.SemiBold) },
+                shape = RoundedCornerShape(16.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
             )
         }
     ) { paddingValues ->
-
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surfaceVariant.copy(
-                                alpha = 0.5f
-                            )
-                        )
-                    )
-                )
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp)
         ) {
-
             when {
-
-                loading -> {
-
-                    LoadingContent()
-                }
-
-                error != null -> {
-
-                    ErrorContent(
-                        error = error,
-                        onReintentar = {
-                            dashboardViewModel.cargar()
-                        }
-                    )
-                }
-
+                loading -> LoadingContent()
+                error != null -> ErrorContent(error, onReintentar = { dashboardViewModel.cargar() })
                 dashboard != null -> {
-
-                    val colores = coloresKpis()
-
+                    val paleta = paletaKpis()
                     val tarjetas = listOf(
-                        TarjetaDatos(
-                            titulo = "Ventas Hoy",
-                            valor = formatearDinero(dashboard.ventas_hoy),
-                            icono = Icons.Filled.AttachMoney,
-                            contenedor = colores.verde.contenedor,
-                            contenido = colores.verde.contenido
-                        ),
-                        TarjetaDatos(
-                            titulo = "Cobrado Hoy",
-                            valor = formatearDinero(dashboard.cobrado_hoy),
-                            icono = Icons.Filled.Payments,
-                            contenedor = colores.azul.contenedor,
-                            contenido = colores.azul.contenido
-                        ),
-                        TarjetaDatos(
-                            titulo = "Pendiente",
-                            valor = formatearDinero(dashboard.saldo_pendiente),
-                            icono = Icons.Filled.Warning,
-                            contenedor = colores.rojo.contenedor,
-                            contenido = colores.rojo.contenido
-                        ),
-                        TarjetaDatos(
-                            titulo = "Clientes",
-                            valor = dashboard.total_clientes.toString(),
-                            icono = Icons.Filled.People,
-                            contenedor = colores.morado.contenedor,
-                            contenido = colores.morado.contenido
-                        ),
-                        TarjetaDatos(
-                            titulo = "Inventario",
-                            valor = formatearCantidad(dashboard.inventario_total),
-                            icono = Icons.Filled.Inventory,
-                            contenedor = colores.naranja.contenedor,
-                            contenido = colores.naranja.contenido
-                        ),
-                        TarjetaDatos(
-                            titulo = "Vendedores",
-                            valor = dashboard.total_vendedores.toString(),
-                            icono = Icons.Filled.Person,
-                            contenedor = colores.gris.contenedor,
-                            contenido = colores.gris.contenido
-                        )
+                        TarjetaDatos("Ventas hoy", formatearDinero(dashboard.ventas_hoy), "Operación del día", Icons.Filled.AttachMoney, paleta.azul),
+                        TarjetaDatos("Cobrado hoy", formatearDinero(dashboard.cobrado_hoy), "Cobranza registrada", Icons.Filled.Payments, paleta.verde),
+                        TarjetaDatos("Pendiente", formatearDinero(dashboard.saldo_pendiente), "Saldo por cobrar", Icons.Filled.Warning, paleta.rojo),
+                        TarjetaDatos("Clientes", dashboard.total_clientes.toString(), "Cartera activa", Icons.Filled.People, paleta.morado),
+                        TarjetaDatos("Inventario", formatearCantidad(dashboard.inventario_total), "Productos en stock", Icons.Filled.Inventory, paleta.naranja),
+                        TarjetaDatos("Vendedores", dashboard.total_vendedores.toString(), "Equipo comercial", Icons.Filled.Person, paleta.neutro)
                     )
-
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 150.dp),
+                        columns = GridCells.Fixed(2),
                         modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        contentPadding = PaddingValues(bottom = 88.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 92.dp)
                     ) {
-
-                        items(
-                            items = tarjetas,
-                            key = { it.titulo }
-                        ) { tarjeta ->
-                            TarjetaKpi(tarjeta)
-                        }
+                        item(span = { GridItemSpan(maxLineSpan) }) { DashboardEncabezado(nombre) }
+                        items(tarjetas, key = { it.titulo }) { tarjeta -> TarjetaKpi(tarjeta) }
                     }
                 }
             }
@@ -269,115 +163,49 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun TarjetaKpi(
-    tarjeta: TarjetaDatos
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = tarjeta.contenedor
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 3.dp
-        )
-    ) {
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-
-            Surface(
-                modifier = Modifier.size(56.dp),
-                shape = CircleShape,
-                color = tarjeta.contenido.copy(
-                    alpha = 0.14f
-                )
-            ) {
-
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-
-                    Icon(
-                        imageVector = tarjeta.icono,
-                        contentDescription = tarjeta.titulo,
-                        tint = tarjeta.contenido,
-                        modifier = Modifier.size(30.dp)
-                    )
-                }
-            }
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            Text(
-                text = tarjeta.titulo,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium,
-                color = tarjeta.contenido.copy(
-                    alpha = 0.85f
-                )
-            )
-
-            Spacer(
-                modifier = Modifier.height(6.dp)
-            )
-
-            Text(
-                text = tarjeta.valor,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = tarjeta.contenido
-            )
+private fun DashboardEncabezado(nombre: String) {
+    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+            Text("HOY", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(2.dp))
+            Text("Hola, $nombre", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("Aquí está el pulso de tu operación.", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.76f))
         }
     }
 }
 
 @Composable
-private fun coloresKpis(): PaletaKpi =
-    if (isSystemInDarkTheme()) {
-        PaletaKpi(
-            verde = PaletaColor(Color(0xFF1E3A24), Color(0xFF81C784)),
-            azul = PaletaColor(Color(0xFF16324F), Color(0xFF64B5F6)),
-            rojo = PaletaColor(Color(0xFF3F1D1D), Color(0xFFE57373)),
-            morado = PaletaColor(Color(0xFF33234A), Color(0xFFCE93D8)),
-            naranja = PaletaColor(Color(0xFF3A2A12), Color(0xFFFFB74D)),
-            gris = PaletaColor(Color(0xFF2E2E2E), Color(0xFFBDBDBD))
-        )
-    } else {
-        PaletaKpi(
-            verde = PaletaColor(Color(0xFFE8F5E9), Color(0xFF2E7D32)),
-            azul = PaletaColor(Color(0xFFE3F2FD), Color(0xFF1565C0)),
-            rojo = PaletaColor(Color(0xFFFFEBEE), Color(0xFFC62828)),
-            morado = PaletaColor(Color(0xFFF3E5F5), Color(0xFF6A1B9A)),
-            naranja = PaletaColor(Color(0xFFFFF3E0), Color(0xFFEF6C00)),
-            gris = PaletaColor(Color(0xFFF5F5F5), Color(0xFF424242))
-        )
+private fun TarjetaKpi(tarjeta: TarjetaDatos) = Card(
+    modifier = Modifier.fillMaxWidth().height(146.dp), shape = RoundedCornerShape(18.dp),
+    colors = CardDefaults.cardColors(containerColor = tarjeta.estilo.fondo), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+) {
+    Column(modifier = Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.SpaceBetween) {
+        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = tarjeta.estilo.iconoFondo) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(tarjeta.icono, tarjeta.titulo, tint = tarjeta.estilo.contenido, modifier = Modifier.size(22.dp))
+            }
+        }
+        Column {
+            Text(tarjeta.titulo, style = MaterialTheme.typography.labelMedium, color = tarjeta.estilo.contenido.copy(alpha = 0.86f), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(tarjeta.valor, style = MaterialTheme.typography.titleLarge, color = tarjeta.estilo.contenido, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(tarjeta.detalle, style = MaterialTheme.typography.labelSmall, color = tarjeta.estilo.contenido.copy(alpha = 0.76f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
+}
 
-private data class PaletaKpi(
-    val verde: PaletaColor,
-    val azul: PaletaColor,
-    val rojo: PaletaColor,
-    val morado: PaletaColor,
-    val naranja: PaletaColor,
-    val gris: PaletaColor
+@Composable
+private fun paletaKpis() = if (isSystemInDarkTheme()) PaletaKpi(
+    EstiloKpi(Color(0xFF0753B5), Color.White, Color.White.copy(alpha = 0.18f)), EstiloKpi(Color(0xFF176B38), Color.White, Color.White.copy(alpha = 0.18f)),
+    EstiloKpi(Color(0xFFB72B26), Color.White, Color.White.copy(alpha = 0.18f)), EstiloKpi(Color(0xFF5635A8), Color.White, Color.White.copy(alpha = 0.18f)),
+    EstiloKpi(Color(0xFFC46600), Color.White, Color.White.copy(alpha = 0.18f)), EstiloKpi(Color(0xFF334155), Color.White, Color.White.copy(alpha = 0.18f))
+) else PaletaKpi(
+    EstiloKpi(Color(0xFF1769C2), Color.White, Color.White.copy(alpha = 0.20f)), EstiloKpi(Color(0xFF2E8B46), Color.White, Color.White.copy(alpha = 0.20f)),
+    EstiloKpi(Color(0xFFD93B32), Color.White, Color.White.copy(alpha = 0.20f)), EstiloKpi(Color(0xFF6542B7), Color.White, Color.White.copy(alpha = 0.20f)),
+    EstiloKpi(Color(0xFFF28A00), Color.White, Color.White.copy(alpha = 0.20f)), EstiloKpi(Color(0xFF475569), Color.White, Color.White.copy(alpha = 0.20f))
 )
 
-private data class PaletaColor(
-    val contenedor: Color,
-    val contenido: Color
-)
-
-private data class TarjetaDatos(
-    val titulo: String,
-    val valor: String,
-    val icono: ImageVector,
-    val contenedor: Color,
-    val contenido: Color
-)
+private data class PaletaKpi(val azul: EstiloKpi, val verde: EstiloKpi, val rojo: EstiloKpi, val morado: EstiloKpi, val naranja: EstiloKpi, val neutro: EstiloKpi)
+private data class EstiloKpi(val fondo: Color, val contenido: Color, val iconoFondo: Color)
+private data class TarjetaDatos(val titulo: String, val valor: String, val detalle: String, val icono: ImageVector, val estilo: EstiloKpi)
