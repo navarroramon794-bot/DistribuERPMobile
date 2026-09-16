@@ -161,6 +161,7 @@ private fun DrawerHeader(nombre: String, correo: String, rol: String) {
                 Column {
                     Text("DistribuERP", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
                     Text("Mobile", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.76f))
+                    Text("by C&R Solutions", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.76f))
                 }
             }
             Spacer(Modifier.height(18.dp))

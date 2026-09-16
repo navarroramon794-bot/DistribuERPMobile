@@ -364,7 +364,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "© 2026 DistribuERP · Todos los derechos reservados",
+                    text = "© 2026 C&R Solutions · DistribuERP\nTodos los derechos reservados",
                     style = MaterialTheme.typography.labelSmall,
                     color = LoginTextSecondary.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center,

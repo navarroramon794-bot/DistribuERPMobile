@@ -41,6 +41,8 @@ class SplashActivity : ComponentActivity() {
                     Text(text = "Gestión comercial para\nequipos de distribución", fontFamily = poppins, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 24.sp, color = Color.White.copy(alpha = 0.90f), textAlign = TextAlign.Center)
                     Spacer(Modifier.height(44.dp))
                     Text(text = "Ventas   ·   Cobranza   ·   Inventario   ·   GPS", fontFamily = poppins, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Color.White.copy(alpha = 0.82f), textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(26.dp))
+                    Text(text = "Una solución de C&R Solutions", fontFamily = poppins, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = Color.White.copy(alpha = 0.88f), textAlign = TextAlign.Center)
                 }
             }
         }
