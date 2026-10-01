@@ -1,9 +1,6 @@
 package com.distribuerp.mobile.api
 
 import com.distribuerp.mobile.BuildConfig
-import okhttp3.Cookie
-import okhttp3.CookieJar
-import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -16,32 +13,7 @@ object RetrofitClient {
 
     var onSessionExpirada: (() -> Unit)? = null
 
-    private val cookieJar = object : CookieJar {
-
-        private val cookies = mutableMapOf<String, MutableList<Cookie>>()
-
-        override fun saveFromResponse(
-            url: HttpUrl,
-            cookies: List<Cookie>
-        ) {
-            this.cookies.getOrPut(url.host()) { mutableListOf() }
-                .addAll(cookies)
-        }
-
-        override fun loadForRequest(
-            url: HttpUrl
-        ): List<Cookie> =
-            cookies[url.host()] ?: emptyList()
-
-        fun limpiar() {
-            cookies.clear()
-        }
-
-        fun tieneCookies(): Boolean =
-            cookies.values.any { lista ->
-                lista.any { it.expiresAt() > System.currentTimeMillis() }
-            }
-    }
+    private val cookieJar = SesionCookieJar()
 
     private val client =
         OkHttpClient.Builder()

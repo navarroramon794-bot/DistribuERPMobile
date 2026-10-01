@@ -102,10 +102,14 @@ class LicenciaViewModel(
                 return@launch
             }
 
-            if (dentroDePeriodoGracia(guardada)) {
-                aplicarGuardada(guardada)
-            } else {
-                estado = EstadoLicencia.SinInternet
+            when (
+                medidaTrasFalloDeVerificacion(
+                    dentroDePeriodoGracia(guardada)
+                )
+            ) {
+                MedidaTrasFallo.UsarGracia -> aplicarGuardada(guardada)
+                MedidaTrasFallo.SinInternet ->
+                    estado = EstadoLicencia.SinInternet
             }
 
             cargando = false
@@ -224,6 +228,10 @@ class LicenciaViewModel(
             }
 
         } catch (e: HttpException) {
+            if (esErrorTransitorio(e.code())) {
+                return false
+            }
+
             mensaje = mensajeHttp(e)
             estado = EstadoLicencia.Error
             true
