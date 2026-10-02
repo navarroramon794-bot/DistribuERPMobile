@@ -1,4 +1,4 @@
-package com.distribuerp.mobile.viewmodel
+﻿package com.distribuerp.mobile.viewmodel
 
 import android.app.Application
 import android.util.Log
@@ -81,14 +81,14 @@ class AuthViewModel(
                         call: Call<PingResponse>,
                         response: Response<PingResponse>
                     ) {
-                        Log.d("API", "Código: ${response.code()}")
+                        Log.d("API", "CA3digo: ${response.code()}")
                         Log.d("API", "Body: ${response.body()}")
 
                         pingEstado =
                             if (response.isSuccessful) {
-                                "Servidor conectado ✅"
+                                "Servidor conectado âo."
                             } else {
-                                "HTTP ${response.code()} ❌"
+                                "HTTP ${response.code()} â?O"
                             }
                     }
 
@@ -125,7 +125,7 @@ class AuthViewModel(
                             empresa = null
                             Log.w(
                                 "EMPRESA",
-                                "Respuesta inválida: HTTP ${response.code()}"
+                                "Respuesta invA¡lida: HTTP ${response.code()}"
                             )
                         }
                     }
@@ -183,6 +183,7 @@ class AuthViewModel(
                                                     usuario.vendedor_id
                                                         ?.toString(),
                                                 vendedor = usuario.vendedor,
+                                                empresa_id = usuario.empresa_id?.toString(),
                                                 password_temporal = usuario.password_temporal
                                             )
                                         )
@@ -195,7 +196,7 @@ class AuthViewModel(
                                 } else {
                                     loginUiState = loginUiState.copy(
                                         enviando = false,
-                                        mensaje = "Respuesta inválida del servidor"
+                                        mensaje = "Respuesta invA¡lida del servidor"
                                     )
                                 }
                             }
@@ -203,7 +204,7 @@ class AuthViewModel(
                             401 -> {
                                 loginUiState = loginUiState.copy(
                                     enviando = false,
-                                    mensaje = "Credenciales inválidas ❌"
+                                    mensaje = "Credenciales invA¡lidas â?O"
                                 )
                             }
 
@@ -278,3 +279,4 @@ class AuthViewModel(
         }
     }
 }
+

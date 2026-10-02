@@ -1,4 +1,4 @@
-package com.distribuerp.mobile.viewmodel
+﻿package com.distribuerp.mobile.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -143,3 +143,4 @@ class ClienteViewModel(
         }
     }
 }
+

@@ -1,4 +1,4 @@
-package com.distribuerp.mobile.data
+﻿package com.distribuerp.mobile.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore(
@@ -21,6 +22,7 @@ class SessionManager(private val context: Context) {
         val ROL = stringPreferencesKey("rol")
         val VENDEDOR_ID = stringPreferencesKey("vendedor_id")
         val VENDEDOR = stringPreferencesKey("vendedor")
+        val EMPRESA_ID = stringPreferencesKey("empresa_id")
         val PASSWORD_TEMPORAL = booleanPreferencesKey("password_temporal")
     }
 
@@ -39,12 +41,13 @@ class SessionManager(private val context: Context) {
                     rol = prefs[Keys.ROL],
                     vendedor_id = prefs[Keys.VENDEDOR_ID],
                     vendedor = prefs[Keys.VENDEDOR],
+                    empresa_id = prefs[Keys.EMPRESA_ID],
                     password_temporal = prefs[Keys.PASSWORD_TEMPORAL] ?: false
                 )
             }
         }
 
-    suspend fun guardarSesion(usuario: UsuarioGuardado) {
+    suspend         fun guardarSesion(usuario: UsuarioGuardado) {
         context.dataStore.edit { prefs ->
             prefs[Keys.ID] = usuario.id
             prefs[Keys.NOMBRE] = usuario.nombre
@@ -52,8 +55,15 @@ class SessionManager(private val context: Context) {
             prefs[Keys.ROL] = usuario.rol ?: ""
             prefs[Keys.VENDEDOR_ID] = usuario.vendedor_id ?: ""
             prefs[Keys.VENDEDOR] = usuario.vendedor ?: ""
+            prefs[Keys.EMPRESA_ID] = usuario.empresa_id ?: ""
             prefs[Keys.PASSWORD_TEMPORAL] = usuario.password_temporal ?: false
         }
+    }
+
+    suspend fun obtenerEmpresaId(): Int? {
+        return context.dataStore.data.map { prefs ->
+            prefs[Keys.EMPRESA_ID]?.toIntOrNull()
+        }.first()
     }
 
     suspend fun actualizarPasswordTemporal(valor: Boolean) {
@@ -76,5 +86,7 @@ data class UsuarioGuardado(
     val rol: String?,
     val vendedor_id: String? = null,
     val vendedor: String? = null,
+    val empresa_id: String? = null,
     val password_temporal: Boolean? = null
 )
+
