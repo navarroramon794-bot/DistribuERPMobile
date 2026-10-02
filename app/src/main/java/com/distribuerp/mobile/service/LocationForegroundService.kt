@@ -15,6 +15,7 @@ import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.distribuerp.mobile.R
+import com.distribuerp.mobile.data.SessionManager
 import com.distribuerp.mobile.data.UbicacionProvider
 import com.distribuerp.mobile.data.local.AppDatabase
 import com.distribuerp.mobile.data.local.UbicacionPendienteEntity
@@ -28,7 +29,9 @@ import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class LocationForegroundService : Service() {
 
@@ -212,7 +215,7 @@ class LocationForegroundService : Service() {
                                             val dao = db.ubicacionPendienteDao()
                                             dao.insertar(
                                                 UbicacionPendienteEntity(
-                                                    vendedorId = 0,
+                                                    vendedorId = vendedorIdSesion(),
                                                     latitud = loc.latitude,
                                                     longitud = loc.longitude,
                                                     precisionM = precision,
@@ -221,7 +224,7 @@ class LocationForegroundService : Service() {
                                                     fecha = fecha
                                                 )
                                             )
-                                            dao.recortarA50(0)
+                                            dao.recortarA50(vendedorIdSesion())
                                             LocationSyncWorker.encolar(applicationContext)
                                         } catch (_: Exception) {}
                                     }
@@ -254,6 +257,22 @@ class LocationForegroundService : Service() {
     fun actualizarIntervaloSegunEstado() {
         val fg = isAppInForeground()
         startTracking(isForeground = fg)
+    }
+
+    /**
+     * Lee el vendedor_id de la sesion real (DataStore) en lugar de usar 0.
+     * Se cachea en memoria: la sesion no cambia durante el tracking.
+     */
+    private var _vendedorIdCacheado: Int? = null
+
+    private fun vendedorIdSesion(): Int {
+        _vendedorIdCacheado?.let { return it }
+        return runBlocking {
+            val valor = SessionManager(this@LocationForegroundService).sesion
+                .first()?.vendedor_id?.toIntOrNull() ?: 0
+            _vendedorIdCacheado = valor
+            valor
+        }
     }
 
     companion object {

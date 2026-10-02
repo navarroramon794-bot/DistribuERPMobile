@@ -25,11 +25,9 @@ class LocationSyncWorker(context: Context, params: WorkerParameters) : Coroutine
                 val resp = RetrofitClient.api.enviarUbicacion(req).execute()
                 when {
                     resp.isSuccessful -> {
+                        // Solo se elimina la ubicacion confirmada por el backend.
+                        // El resto de la cola se conserva intacta.
                         dao.eliminarPorId(ultima.id)
-                        val restantes = dao.obtenerPorVendedor(vendedorId)
-                        if (restantes.size > 1) {
-                            for (r in restantes) if (r.id != ultima.id) dao.eliminarPorId(r.id)
-                        }
                     }
                     resp.code() in listOf(400, 401, 403) -> dao.eliminarPorId(ultima.id)
                     else -> return@withContext Result.retry()
