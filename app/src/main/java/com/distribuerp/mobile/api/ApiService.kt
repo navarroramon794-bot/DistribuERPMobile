@@ -178,7 +178,8 @@ interface ApiService {
 
     @POST("api/ventas")
     fun crearVenta(
-        @Body datos: VentaRequest
+        @Body datos: VentaRequest,
+        @retrofit2.http.HeaderMap headers: Map<String, String> = emptyMap()
     ): Call<VentaResponse>
 
     @GET("api/cargas")

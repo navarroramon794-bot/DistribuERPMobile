@@ -16,11 +16,6 @@ enum class EstadoOutbox(val valor: String) {
     }
 }
 
-object TiposOutbox {
-    const val GPS = "GPS"
-    const val TEST = "TEST"
-}
-
 @Entity(tableName = "outbox")
 data class OutboxOperation(
     @PrimaryKey

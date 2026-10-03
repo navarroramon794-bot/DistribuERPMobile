@@ -74,5 +74,51 @@ object MigracionesRoom {
         }
     }
 
-    val TODAS: Array<Migration> = arrayOf(MIGRACION_1_2, MIGRACION_2_3)
+    val MIGRACION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `ventas_pendientes` (
+                    `id` TEXT NOT NULL,
+                    `clientOperationId` TEXT NOT NULL,
+                    `empresaId` INTEGER NOT NULL,
+                    `vendedorId` INTEGER NOT NULL,
+                    `clienteId` INTEGER NOT NULL,
+                    `formaPago` TEXT NOT NULL,
+                    `fecha` INTEGER NOT NULL,
+                    `subtotal` REAL NOT NULL,
+                    `total` REAL NOT NULL,
+                    `estadoLocal` TEXT NOT NULL,
+                    `folioBackend` TEXT,
+                    `ventaIdBackend` INTEGER,
+                    `error` TEXT,
+                    `intentos` INTEGER NOT NULL,
+                    `creadoEn` INTEGER NOT NULL,
+                    `actualizadoEn` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_ventas_pendientes_empresaId` ON `ventas_pendientes` (`empresaId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_ventas_pendientes_clienteOperationId` ON `ventas_pendientes` (`clientOperationId`)")
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `detalles_ventas_pendientes` (
+                    `ventaId` TEXT NOT NULL,
+                    `productoId` INTEGER NOT NULL,
+                    `cantidad` REAL NOT NULL,
+                    `precioUnitario` REAL NOT NULL,
+                    `subtotal` REAL NOT NULL,
+                    PRIMARY KEY(`ventaId`, `productoId`),
+                    FOREIGN KEY(`ventaId`) REFERENCES `ventas_pendientes`(`id`) ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_detalles_ventas_pendientes_ventaId` ON `detalles_ventas_pendientes` (`ventaId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_detalles_ventas_pendientes_productoId` ON `detalles_ventas_pendientes` (`productoId`)")
+        }
+    }
+
+    val TODAS: Array<Migration> = arrayOf(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4)
 }

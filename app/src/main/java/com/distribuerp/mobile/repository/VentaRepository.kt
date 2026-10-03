@@ -15,10 +15,11 @@ class VentaRepository(
 
     fun crearVenta(
         request: VentaRequest,
+        headers: Map<String, String> = emptyMap(),
         onSuccess: (Venta) -> Unit,
         onError: (Throwable) -> Unit
     ) {
-        api.crearVenta(request).enqueue(
+        api.crearVenta(request, headers).enqueue(
             object : Callback<VentaResponse> {
 
                 override fun onResponse(

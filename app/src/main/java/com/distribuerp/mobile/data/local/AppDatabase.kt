@@ -10,7 +10,9 @@ import androidx.room.RoomDatabase
         UbicacionPendienteEntity::class,
         OutboxOperation::class,
         ClienteEntity::class,
-        ProductoEntity::class
+        ProductoEntity::class,
+        VentaPendienteEntity::class,
+        DetalleVentaPendienteEntity::class
     ],
     version = AppDatabase.SCHEMA_VERSION,
     exportSchema = false
@@ -21,9 +23,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun outboxDao(): OutboxDao
     abstract fun clienteDao(): ClienteDao
     abstract fun productoDao(): ProductoDao
+    abstract fun ventaPendienteDao(): VentaPendienteDao
 
     companion object {
-        const val SCHEMA_VERSION = 3
+        const val SCHEMA_VERSION = 4
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
