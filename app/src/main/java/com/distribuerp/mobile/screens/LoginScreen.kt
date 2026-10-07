@@ -346,6 +346,33 @@ fun LoginScreen(
                                 }
                             }
                         }
+
+                        if (viewModel.ventasPendientes > 0) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                color = LoginSurfaceVariant,
+                                border = BorderStroke(1.dp, LoginBorder)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Storefront,
+                                        contentDescription = null,
+                                        tint = LoginPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Tienes ${viewModel.ventasPendientes} venta(s) pendiente(s): se enviarán al iniciar sesión.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = LoginTextSecondary
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 

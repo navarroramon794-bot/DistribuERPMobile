@@ -1,6 +1,8 @@
 package com.distribuerp.mobile.api
 
+import android.content.Context
 import com.distribuerp.mobile.BuildConfig
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -14,6 +16,9 @@ object RetrofitClient {
     var onSessionExpirada: (() -> Unit)? = null
 
     private val cookieJar = SesionCookieJar()
+
+    @Volatile
+    private var cookieStore: CookieStore? = null
 
     private val client =
         OkHttpClient.Builder()
@@ -58,6 +63,46 @@ object RetrofitClient {
         cookieJar.limpiar()
     }
 
+    /**
+     * Prepara el almacen de cookies cifradas. Idempotente; se invoca una vez
+     * al arrancar desde `MainActivity` antes de usar la red.
+     */
+    fun iniciar(context: Context) {
+        if (cookieStore == null) {
+            synchronized(this) {
+                if (cookieStore == null) {
+                    cookieStore = CookieStore.crear(context)
+                }
+            }
+        }
+    }
+
+    /**
+     * Restaura la cookie persistida de una sesion anterior. Devuelve `true` si
+     * tras la restauracion el jar tiene al menos una cookie valida.
+     */
+    suspend fun restaurarCookies(): Boolean {
+        val almacen = cookieStore ?: return false
+        val serializadas = almacen.restaurar()
+        if (serializadas.isEmpty()) return false
+
+        cookieJar.importar(serializadas, urlBase())
+        return cookieJar.tieneCookies()
+    }
+
+    /** Persiste el contenido actual del jar de cookies, cifrado. */
+    suspend fun persistirCookies() {
+        val almacen = cookieStore ?: return
+        almacen.guardar(cookieJar.exportar())
+    }
+
+    /** Borra tambien la copia persistida (logout). */
+    suspend fun limpiarCookiesPersistidas() {
+        cookieStore?.limpiar()
+    }
+
     fun tieneCookies(): Boolean =
         cookieJar.tieneCookies()
+
+    private fun urlBase(): HttpUrl = HttpUrl.get(BASE_URL)
 }

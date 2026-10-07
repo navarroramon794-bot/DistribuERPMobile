@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -129,34 +131,85 @@ fun DashboardScreen(
             )
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier.fillMaxSize().padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            when {
-                loading -> LoadingContent()
-                error != null -> ErrorContent(error, onReintentar = { dashboardViewModel.cargar() })
-                dashboard != null -> {
-                    val paleta = paletaKpis()
-                    val tarjetas = listOf(
-                        TarjetaDatos("Ventas hoy", formatearDinero(dashboard.ventas_hoy), "Operación del día", Icons.Filled.AttachMoney, paleta.azul),
-                        TarjetaDatos("Cobrado hoy", formatearDinero(dashboard.cobrado_hoy), "Cobranza registrada", Icons.Filled.Payments, paleta.verde),
-                        TarjetaDatos("Pendiente", formatearDinero(dashboard.saldo_pendiente), "Saldo por cobrar", Icons.Filled.Warning, paleta.rojo),
-                        TarjetaDatos("Clientes", dashboard.total_clientes.toString(), "Cartera activa", Icons.Filled.People, paleta.morado),
-                        TarjetaDatos("Inventario", formatearCantidad(dashboard.inventario_total), "Productos en stock", Icons.Filled.Inventory, paleta.naranja),
-                        TarjetaDatos("Vendedores", dashboard.total_vendedores.toString(), "Equipo comercial", Icons.Filled.Person, paleta.neutro)
-                    )
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(top = 16.dp, bottom = 92.dp)
-                    ) {
-                        item(span = { GridItemSpan(maxLineSpan) }) { DashboardEncabezado(nombre) }
-                        items(tarjetas, key = { it.titulo }) { tarjeta -> TarjetaKpi(tarjeta) }
+            if (sesion != null && authViewModel.authPerdida) {
+                BannerReautenticacion(onReautenticar = { authViewModel.cerrarSesion() })
+            }
+            Box(
+                modifier = Modifier.fillMaxSize()
+                    .padding(horizontal = 16.dp)
+            ) {
+                when {
+                    loading -> LoadingContent()
+                    error != null -> ErrorContent(error, onReintentar = { dashboardViewModel.cargar() })
+                    dashboard != null -> {
+                        val paleta = paletaKpis()
+                        val tarjetas = listOf(
+                            TarjetaDatos("Ventas hoy", formatearDinero(dashboard.ventas_hoy), "Operación del día", Icons.Filled.AttachMoney, paleta.azul),
+                            TarjetaDatos("Cobrado hoy", formatearDinero(dashboard.cobrado_hoy), "Cobranza registrada", Icons.Filled.Payments, paleta.verde),
+                            TarjetaDatos("Pendiente", formatearDinero(dashboard.saldo_pendiente), "Saldo por cobrar", Icons.Filled.Warning, paleta.rojo),
+                            TarjetaDatos("Clientes", dashboard.total_clientes.toString(), "Cartera activa", Icons.Filled.People, paleta.morado),
+                            TarjetaDatos("Inventario", formatearCantidad(dashboard.inventario_total), "Productos en stock", Icons.Filled.Inventory, paleta.naranja),
+                            TarjetaDatos("Vendedores", dashboard.total_vendedores.toString(), "Equipo comercial", Icons.Filled.Person, paleta.neutro)
+                        )
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(top = 16.dp, bottom = 92.dp)
+                        ) {
+                            item(span = { GridItemSpan(maxLineSpan) }) { DashboardEncabezado(nombre) }
+                            items(tarjetas, key = { it.titulo }) { tarjeta -> TarjetaKpi(tarjeta) }
+                        }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BannerReautenticacion(onReautenticar: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.errorContainer
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = "Sesión expirada",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+            Text(
+                text = "Vuelve a iniciar sesión para reanudar el envío de tus ventas pendientes.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            TextButton(
+                onClick = onReautenticar,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("Iniciar sesión")
             }
         }
     }

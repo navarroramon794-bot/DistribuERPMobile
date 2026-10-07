@@ -16,8 +16,9 @@ import okhttp3.HttpUrl
  *   misma identidad, por lo que el header Cookie no crece de forma
  *   indefinida tras repetidos login/logout.
  *
- * No introduce persistencia: el contenido es solo en memoria, igual que
- * el comportamiento anterior del APK.
+ * La persistencia del contenido es externa: [exportar] produce la vista
+ * serializada que un [CookieStore] guarda cifrada, y [importar] la restaura.
+ * En memoria sigue siendo solo el jar sobre el que OkHttp aplica la semantica.
  */
 class SesionCookieJar : CookieJar {
 
@@ -56,6 +57,50 @@ class SesionCookieJar : CookieJar {
     @Synchronized
     fun limpiar() {
         almacenadas.clear()
+    }
+
+    /**
+     * Serializa las cookies vivas con el formato canonico de OkHttp
+     * ([Cookie.toString]), listas para persistirlas.
+     *
+     * Las cookies ya expiradas nunca salen del jar hacia el disco.
+     */
+    @Synchronized
+    fun exportar(): List<String> {
+        val ahora = System.currentTimeMillis()
+
+        return almacenadas.values
+            .filter { it.expiresAt() > ahora }
+            .map { it.toString() }
+    }
+
+    /**
+     * Restaura cookies previamente exportadas ([exportar]).
+     *
+     * Devuelve cuantas cookies vivas se restauraron. Las lineas invalidas,
+     * corrompidas o ya expiradas se descartan en silencio, de modo que un disco
+     * danado nunca rompe el arranque.
+     */
+    @Synchronized
+    fun importar(
+        serializadas: List<String>,
+        url: HttpUrl
+    ): Int {
+        var restauradas = 0
+
+        for (linea in serializadas) {
+            val cookie = Cookie.parse(url, linea) ?: continue
+            val clave = identidad(cookie)
+
+            if (cookie.expiresAt() <= System.currentTimeMillis()) {
+                almacenadas.remove(clave)
+            } else {
+                almacenadas[clave] = cookie
+                restauradas++
+            }
+        }
+
+        return restauradas
     }
 
     @Synchronized

@@ -72,6 +72,12 @@ class SessionManager(private val context: Context) {
         }
     }
 
+    suspend fun obtenerVendedorId(): Int? {
+        return context.dataStore.data.map { prefs ->
+            prefs[Keys.VENDEDOR_ID]?.toIntOrNull()
+        }.first()
+    }
+
     suspend fun cerrarSesion() {
         context.dataStore.edit { prefs ->
             prefs.clear()

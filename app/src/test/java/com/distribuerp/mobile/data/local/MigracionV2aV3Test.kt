@@ -89,7 +89,7 @@ class MigracionV2aV3Test {
             .allowMainThreadQueries()
             .build()
 
-        assertEquals(3, AppDatabase.SCHEMA_VERSION)
+        assertEquals(4, AppDatabase.SCHEMA_VERSION)
         assertEquals(1, db.ubicacionPendienteDao().obtenerTodas().size)
         assertEquals(1, db.outboxDao().contar())
         assertNotNull(db.outboxDao().obtenerPorUuid("123e4567-e89b-12d3-a456-426614174000"))

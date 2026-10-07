@@ -88,7 +88,7 @@ class MigracionRoomTest {
         } catch (e: Exception) {
             2
         }
-        assertEquals(3, version)
+        assertEquals(4, version)
         assertNotNull(db.outboxDao())
         assertTrue(db.outboxDao().contar() == 0)
 

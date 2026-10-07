@@ -14,12 +14,15 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.distribuerp.mobile.api.RetrofitClient
 import com.distribuerp.mobile.data.SessionManager
 import com.distribuerp.mobile.data.UsuarioGuardado
+import com.distribuerp.mobile.data.local.AppDatabase
+import com.distribuerp.mobile.data.local.EstadoOutbox
 import com.distribuerp.mobile.models.EmpresaDatos
 import com.distribuerp.mobile.models.EmpresaResponse
 import com.distribuerp.mobile.models.LoginRequest
 import com.distribuerp.mobile.models.LoginResponse
 import com.distribuerp.mobile.models.PingResponse
 import com.distribuerp.mobile.repository.mensajeAmigable
+import com.distribuerp.mobile.sync.SyncManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -35,6 +38,7 @@ data class LoginUiState(
 )
 
 class AuthViewModel(
+    private val application: Application,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -47,6 +51,22 @@ class AuthViewModel(
     var empresa by mutableStateOf<EmpresaDatos?>(null)
         private set
 
+    /**
+     * `true` cuando el backend respondio 401/302 pese a haber sesion local: la
+     * cookie de sesion HTTP falta o expiro. No se borra la identidad ni las
+     * ventas; solo se avisa de que hay que volver a entrar para reanudar la
+     * sincronizacion.
+     */
+    var authPerdida by mutableStateOf(false)
+        private set
+
+    /**
+     * Cantidad de operaciones Outbox pendientes de enviar. Solo se usa como
+     * aviso en la pantalla de login: el conteo no es critico.
+     */
+    var ventasPendientes by mutableStateOf(0)
+        private set
+
     val sesion =
         sessionManager.sesion.stateIn(
             scope = viewModelScope,
@@ -56,20 +76,40 @@ class AuthViewModel(
 
     init {
         RetrofitClient.onSessionExpirada = {
-            cerrarSesionLocal()
-        }
-
-        viewModelScope.launch {
-            val haySesion =
-                sessionManager.sesion.first() != null
-
-            if (haySesion && !RetrofitClient.tieneCookies()) {
-                cerrarSesionLocal()
+            // Un 401/302 no borra la identidad: conserva la sesion, las ventas
+            // y la outbox. La sincronizacion se retoma al volver a entrar.
+            viewModelScope.launch {
+                val haySesion =
+                    sessionManager.sesion.first() != null
+                if (haySesion) {
+                    authPerdida = true
+                }
             }
         }
 
+        actualizarPendientes()
         checkServidor()
     }
+
+    private fun actualizarPendientes() {
+        viewModelScope.launch {
+            ventasPendientes = try {
+                AppDatabase.getInstance(application)
+                    .outboxDao()
+                    .contarPorEstado(EstadoOutbox.PENDIENTE.valor)
+            } catch (_: Exception) {
+                0
+            }
+        }
+    }
+
+    /**
+     * Seam de pruebas: sustituye la llamada HTTP real del login por un `Call`
+     * falso, mismo patron que `SyncManager.encolar`. Permite verificar que un
+     * login exitoso guarda la sesion y reencola la sincronizacion sin red.
+     */
+    internal var loginApi: (LoginRequest) -> Call<LoginResponse> =
+        { datos -> RetrofitClient.api.login(datos) }
 
     fun checkServidor() {
         RetrofitClient.api
@@ -154,8 +194,7 @@ class AuthViewModel(
             password = password
         )
 
-        RetrofitClient.api
-            .login(datos)
+        loginApi(datos)
             .enqueue(
                 object : Callback<LoginResponse> {
 
@@ -187,7 +226,19 @@ class AuthViewModel(
                                                 password_temporal = usuario.password_temporal
                                             )
                                         )
+                                        // La cookie ya esta en el jar (OkHttp la
+                                        // aplico al recibir la respuesta): se
+                                        // persiste cifrada para que sobreviva al
+                                        // reinicio del proceso.
+                                        RetrofitClient.persistirCookies()
+                                        authPerdida = false
+                                        actualizarPendientes()
                                         cargarEmpresa()
+
+                                        // De inmediato se retoma lo que quedo
+                                        // pendiente de la sesion anterior.
+                                        SyncManager.encolarSincronizacion(application)
+
                                         loginUiState = loginUiState.copy(
                                             enviando = false,
                                             mensaje = "Bienvenido ${usuario.nombre}"
@@ -263,7 +314,9 @@ class AuthViewModel(
     private fun cerrarSesionLocal() {
         viewModelScope.launch {
             RetrofitClient.limpiarCookies()
+            RetrofitClient.limpiarCookiesPersistidas()
             sessionManager.cerrarSesion()
+            authPerdida = false
             empresa = null
         }
     }
@@ -273,6 +326,7 @@ class AuthViewModel(
             initializer {
                 val app = this[APPLICATION_KEY] as Application
                 AuthViewModel(
+                    application = app,
                     sessionManager = SessionManager(app)
                 )
             }

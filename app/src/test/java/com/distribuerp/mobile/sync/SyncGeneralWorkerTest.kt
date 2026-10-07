@@ -41,6 +41,60 @@ class SyncGeneralWorkerTest {
         pares.toMap()
 
     @Test
+    fun `sin autenticacion la outbox no se envia y queda PENDIENTE`() = runBlocking {
+        val op = OutboxOperation(tipo = TiposOutbox.TEST, payload = "{}")
+        db.outboxDao().insertar(op)
+        var llamadas = 0
+
+        val huboRetry = procesarPendientes(
+            db.outboxDao(),
+            registro(TiposOutbox.TEST to EnviadorOutbox {
+                llamadas++
+                ResultadoEnvio.Confirmado
+            }),
+            autenticado = false
+        )
+
+        assertFalse(huboRetry)
+        assertEquals("Sin cookie no debe emitirse ningun POST", 0, llamadas)
+        val tras = db.outboxDao().obtenerPorUuid(op.uuid)
+        assertNotNull(tras)
+        assertEquals(EstadoOutbox.PENDIENTE.valor, tras!!.estado)
+        assertEquals(0, tras.intentos)
+    }
+
+    @Test
+    fun `una operacion con AuthRequerida queda PENDIENTE con auth_ y vuelve al siguiente sync`() =
+        runBlocking {
+            val op = OutboxOperation(tipo = TiposOutbox.TEST, payload = "{}")
+            db.outboxDao().insertar(op)
+
+            var intentos = 0
+            val envio = registro(
+                TiposOutbox.TEST to EnviadorOutbox {
+                    intentos++
+                    if (intentos == 1) ResultadoEnvio.AuthRequerida(401)
+                    else ResultadoEnvio.Confirmado
+                }
+            )
+
+            assertFalse(
+                "AuthRequerida no debe pedir reintento por WorkManager",
+                procesarPendientes(db.outboxDao(), envio)
+            )
+            assertEquals(1, intentos)
+            val tras = db.outboxDao().obtenerPorUuid(op.uuid)
+            assertNotNull(tras)
+            assertEquals(EstadoOutbox.PENDIENTE.valor, tras!!.estado)
+            assertEquals("auth_401", tras.ultimo_error)
+
+            // El siguiente sync (disparado tras el login) reintenta y confirma.
+            assertFalse(procesarPendientes(db.outboxDao(), envio))
+            assertEquals(2, intentos)
+            assertNull(db.outboxDao().obtenerPorUuid(op.uuid))
+        }
+
+    @Test
     fun `sin operaciones no pide reintento`() = runBlocking {
         assertFalse(procesarPendientes(db.outboxDao(), registro()))
     }
@@ -98,7 +152,7 @@ class SyncGeneralWorkerTest {
     }
 
     @Test
-    fun `fallo transitorio conserva la operacion y pide reintento`() = runBlocking {
+    fun `fallo transitorio conserva la operacion y la deja elegible para retry`() = runBlocking {
         val op = OutboxOperation(tipo = TiposOutbox.TEST, payload = "{}")
         db.outboxDao().insertar(op)
 
@@ -110,9 +164,57 @@ class SyncGeneralWorkerTest {
         assertTrue(huboRetry)
         val tras = db.outboxDao().obtenerPorUuid(op.uuid)
         assertNotNull(tras)
-        assertEquals(EstadoOutbox.ERROR.valor, tras!!.estado)
+        // Vuelve a PENDIENTE para reintentarse en el siguiente sync.
+        assertEquals(EstadoOutbox.PENDIENTE.valor, tras!!.estado)
         assertEquals(1, tras.intentos)
         assertEquals("timeout", tras.ultimo_error)
+    }
+
+    @Test
+    fun `una operacion con error recuperable reintenta en el siguiente sync`() = runBlocking {
+        val op = OutboxOperation(tipo = TiposOutbox.TEST, payload = "{}")
+        db.outboxDao().insertar(op)
+
+        var intentos = 0
+        val envio = registro(
+            TiposOutbox.TEST to EnviadorOutbox {
+                intentos++
+                if (intentos == 1) ResultadoEnvio.Retry("timeout")
+                else ResultadoEnvio.Confirmado
+            }
+        )
+
+        assertTrue(procesarPendientes(db.outboxDao(), envio))
+        assertEquals(1, intentos)
+        assertNotNull(db.outboxDao().obtenerPorUuid(op.uuid))
+
+        // Segundo sync: la operacion debe volver a entrar.
+        assertFalse(procesarPendientes(db.outboxDao(), envio))
+        assertEquals(2, intentos)
+        assertNull(db.outboxDao().obtenerPorUuid(op.uuid))
+    }
+
+    @Test
+    fun `una operacion con error definitivo no reintenta automaticamente`() = runBlocking {
+        val op = OutboxOperation(tipo = TiposOutbox.TEST, payload = "{}")
+        db.outboxDao().insertar(op)
+
+        var intentos = 0
+        val envio = registro(
+            TiposOutbox.TEST to EnviadorOutbox {
+                intentos++
+                ResultadoEnvio.Descartar("400 rechazado")
+            }
+        )
+
+        assertFalse(procesarPendientes(db.outboxDao(), envio))
+        assertFalse(procesarPendientes(db.outboxDao(), envio))
+
+        assertEquals(1, intentos)
+        val tras = db.outboxDao().obtenerPorUuid(op.uuid)
+        assertNotNull(tras)
+        assertEquals(EstadoOutbox.ERROR.valor, tras!!.estado)
+        assertEquals("400 rechazado", tras.ultimo_error)
     }
 
     @Test
@@ -145,7 +247,7 @@ class SyncGeneralWorkerTest {
 
         assertTrue(huboRetry)
         assertNotNull(db.outboxDao().obtenerPorUuid(op.uuid))
-        assertEquals(EstadoOutbox.ERROR.valor, db.outboxDao().obtenerPorUuid(op.uuid)!!.estado)
+        assertEquals(EstadoOutbox.PENDIENTE.valor, db.outboxDao().obtenerPorUuid(op.uuid)!!.estado)
     }
 
     @Test

@@ -234,4 +234,71 @@ class SesionCookieJarTest {
         assertEquals(null, devueltas["session"])
         assertEquals("xyz", devueltas["csrf"]?.value())
     }
+
+    // --- Exportar/importar: persistencia de la session HTTP (fix UAT-05) ---
+
+    @Test
+    fun exportarEImportarConservanLaSession() {
+        val jarOrigen = SesionCookieJar()
+        jarOrigen.saveFromResponse(url(), listOf(cookie(value = "exportada")))
+
+        val serializadas = jarOrigen.exportar()
+        assertFalse(
+            "La exportacion no puede llegar vacia con una cookie viva",
+            serializadas.isEmpty()
+        )
+
+        val jarDestino = SesionCookieJar()
+        val restauradas = jarDestino.importar(serializadas, url())
+
+        assertEquals(1, restauradas)
+        assertEquals("session=exportada", headerDeAplicacion(jarDestino))
+        assertTrue(jarDestino.tieneCookies())
+    }
+
+    @Test
+    fun exportarExcluyeLasCookiesYaExpiradas() {
+        val jarOrigen = SesionCookieJar()
+        jarOrigen.saveFromResponse(url(), listOf(expirada(value = "vieja")))
+
+        assertTrue(jarOrigen.exportar().isEmpty())
+    }
+
+    @Test
+    fun importarDescartaCookiesExpiradas() {
+        val jar = SesionCookieJar()
+
+        val restauradas = jar.importar(listOf(expirada().toString()), url())
+
+        assertEquals(0, restauradas)
+        assertTrue(jar.loadForRequest(url()).isEmpty())
+        assertFalse(jar.tieneCookies())
+    }
+
+    @Test
+    fun importarIgnoraLineasInvalidas() {
+        val jar = SesionCookieJar()
+        val serializadas = listOf(
+            "esto-no-es-una-cookie",
+            "tambien.deberia.ignorarse",
+            cookie(name = "session", value = "valida").toString()
+        )
+
+        val restauradas = jar.importar(serializadas, url())
+
+        assertEquals(1, restauradas)
+        assertEquals("session=valida", headerDeAplicacion(jar))
+    }
+
+    @Test
+    fun importarMantieneLaUltimaPorIdentidad() {
+        val jarOrigen = SesionCookieJar()
+        jarOrigen.saveFromResponse(url(), listOf(cookie(value = "primera")))
+        jarOrigen.saveFromResponse(url(), listOf(cookie(value = "segunda")))
+
+        val jarDestino = SesionCookieJar()
+        jarDestino.importar(jarOrigen.exportar(), url())
+
+        assertEquals("session=segunda", headerDeAplicacion(jarDestino))
+    }
 }

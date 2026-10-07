@@ -39,7 +39,7 @@ interface VentaPendienteDao {
         return VentaPendienteCompleta(venta, detalles)
     }
 
-    @Query("SELECT * FROM ventas_pendientes WHERE empresaId = :empresaId AND clienteOperationId = :clientOpId LIMIT 1")
+    @Query("SELECT * FROM ventas_pendientes WHERE empresaId = :empresaId AND clientOperationId = :clientOpId LIMIT 1")
     suspend fun obtenerPorClientOperationId(empresaId: Int, clientOpId: String): VentaPendienteEntity?
 
     @Query("SELECT * FROM ventas_pendientes WHERE empresaId = :empresaId ORDER BY creadoEn DESC")
